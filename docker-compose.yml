@@ -2,6 +2,7 @@ services:
 
   db:
     image: postgres:latest
+    platform: linux/amd64
     container_name: videoflix_database
     environment:
       POSTGRES_DB: ${DB_NAME}
@@ -15,6 +16,9 @@ services:
     container_name: videoflix_redis
     volumes:
       - redis_data:/data
+    platform: linux/amd64
+
+
 
   web:
     build:

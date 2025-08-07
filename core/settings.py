@@ -11,10 +11,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 
-import os
 from pathlib import Path
 from dotenv import load_dotenv
-
+import os
 
 load_dotenv()
 
@@ -48,9 +47,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_rq',
     'user_auth_app',
-    'videoflix_app',
+    'videoflix_app.apps.ContentConfig',
 ]
-
+    
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',

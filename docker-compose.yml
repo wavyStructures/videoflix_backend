@@ -5,6 +5,7 @@ services:
     image: postgres:15-alpine
     platform: linux/amd64
     container_name: videoflix_database
+    env_file: .env
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
@@ -30,7 +31,8 @@ services:
 
     volumes:
       - .:/app
-      - videoflix_media:/app/media
+      # - videoflix_media:/app/media
+      - ./media:/app/media
       - videoflix_static:/app/static
     ports:
       - "8000:8000"
@@ -42,6 +44,7 @@ services:
 
 volumes:
   postgres_data:
+  media_data:
   redis_data:
   videoflix_media:
   videoflix_static:

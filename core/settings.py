@@ -45,9 +45,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_extensions',
     'django_rq',
     'user_auth_app',
-    'videoflix_app.apps.ContentConfig',
+    'videoflix_app.apps.VideoflixAppConfig',
 ]
     
 MIDDLEWARE = [
@@ -87,13 +88,23 @@ WSGI_APPLICATION = 'core.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("DB_NAME", default="videoflix_db"),
-        "USER": os.environ.get("DB_USER", default="videoflix_user"),
-        "PASSWORD": os.environ.get("DB_PASSWORD", default="supersecretpassword"),
-        "HOST": os.environ.get("DB_HOST", default="db"),
-        "PORT": os.environ.get("DB_PORT", default=5432)
+        "NAME": os.getenv("DB_NAME", "videoflix_db"),
+        "USER": os.getenv("DB_USER", "videoflix_user"),
+        "PASSWORD": os.getenv("DB_PASSWORD", "supersecretpassword"),
+        "HOST": os.getenv("DB_HOST", "db"),
+        "PORT": int(os.getenv("DB_PORT", 5432)),
     }
 }
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": os.environ.get("DB_NAME", default="videoflix_db"),
+#         "USER": os.environ.get("DB_USER", default="videoflix_user"),
+#         "PASSWORD": os.environ.get("DB_PASSWORD", default="supersecretpassword"),
+#         "HOST": os.environ.get("DB_HOST", default="db"),
+#         "PORT": os.environ.get("DB_PORT", default=5432)
+#     }
+# }
 
 CACHES = {
     "default": {
@@ -153,11 +164,19 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
+# BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 STATIC_URL = "/static/"
+# STATIC_ROOT = os.path.join(BASE_DIR, "static")
 STATIC_ROOT = BASE_DIR / "static"
 
-MEDIA_URL = "/media/"
+MEDIA_URL = '/media/'
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_ROOT = BASE_DIR / "media"
+
+
+DEBUG = True
+
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 

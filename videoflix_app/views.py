@@ -1,24 +1,50 @@
-from django.shortcuts import render
+# videoflix_app/views.py
+import os
+from django.http import FileResponse, Http404
+from django.conf import settings
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
+from .models import Video
+from .serializers import VideoSerializer
+
 
 class VideoListView(APIView):
+    permission_classes = [IsAuthenticated]  # JWT required
+
     def get(self, request):
-        return Response(status=status.HTTP_200_OK)
-    
-    
+        videos = Video.objects.all()
+        serializer = VideoSerializer(videos, many=True, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class HLSIndexView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, movie_id, resolution):
-        return Response(status=status.HTTP_200_OK)
-    
-    
+        # Path: MEDIA_ROOT/hls/<movie_id>/<resolution>/index.m3u8
+        playlist_path = os.path.join(settings.MEDIA_ROOT, 'hls', str(movie_id), resolution, 'index.m3u8')
+
+        if not os.path.exists(playlist_path):
+            raise Http404("Playlist not found")
+
+        return FileResponse(open(playlist_path, 'rb'), content_type='application/vnd.apple.mpegurl')
+
+
 class HLSChunkView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, movie_id, resolution, segment):
-        return Response(status=status.HTTP_200_OK)
-    
-    
+        segment_path = os.path.join(settings.MEDIA_ROOT, 'hls', str(movie_id), resolution, segment)
+
+        if not os.path.exists(segment_path):
+            raise Http404("Segment not found")
+
+        return FileResponse(open(segment_path, 'rb'), content_type='video/MP2T')
+
+
 
 # class VideoListView(APIView):
 #     def get(self, request):

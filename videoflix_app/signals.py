@@ -11,7 +11,8 @@ def video_post_save(sender, instance, created, **kwargs):
         file_path = instance.video_file.path
         if os.path.isfile(file_path):
             convert_480p(file_path)
-
+            
+            
         # convert_480p(instance.video_file.path)
         # instance.video_file.seek(0)
         # instance.video_file.save(instance.video_file.name, instance.video_file, save=False
@@ -25,7 +26,7 @@ def auto_delete_file_on_delete(sender, instance, **kwargs):
     Deletes file from filesystem
     when corresponding `Video` object is deleted.
     """
-    if instance.video_file:
+    if instance.video_file and instance.video_file.name:
         if os.path.isfile(instance.video_file.path):
             os.remove(instance.video_file.path)
             

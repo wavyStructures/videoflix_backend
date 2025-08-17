@@ -49,6 +49,8 @@ INSTALLED_APPS = [
     'django_rq',
     'user_auth_app',
     'videoflix_app.apps.VideoflixAppConfig',
+    'rest_framework',
+    'rest_framework_simplejwt.token_blacklist' ,
 ]
     
 MIDDLEWARE = [

@@ -36,8 +36,9 @@ ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", default="localhost").split(",")
 CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", default="http://localhost:4200").split(",")
 
 
-# Application definition
+AUTH_USER_MODEL = "users.CustomUser"
 
+# Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -50,9 +51,9 @@ INSTALLED_APPS = [
     'user_auth_app',
     'videoflix_app.apps.VideoflixAppConfig',
     'rest_framework',
-    'rest_framework_simplejwt.token_blacklist' ,
+    'rest_framework_simplejwt.token_blacklist',
 ]
-    
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',

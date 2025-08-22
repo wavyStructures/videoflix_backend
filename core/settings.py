@@ -36,7 +36,7 @@ ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", default="localhost").split(",")
 CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", default="http://localhost:4200").split(",")
 
 
-AUTH_USER_MODEL = "users.CustomUser"
+AUTH_USER_MODEL = "user_auth_app.CustomUser"
 
 # Application definition
 INSTALLED_APPS = [
@@ -94,7 +94,7 @@ DATABASES = {
         "NAME": os.getenv("DB_NAME", "videoflix_db"),
         "USER": os.getenv("DB_USER", "videoflix_user"),
         "PASSWORD": os.getenv("DB_PASSWORD", "supersecretpassword"),
-        "HOST": os.getenv("DB_HOST", "db"),
+        "HOST": os.getenv("DB_HOST", "db"),      
         "PORT": int(os.getenv("DB_PORT", 5432)),
     }
 }

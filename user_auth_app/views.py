@@ -8,18 +8,29 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
+from rest_framework import generics
+from django.core.mail import send_mail
+from django.utils.encoding import force_bytes
+
+
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.token_blacklist import OutstandingToken, BlacklistedToken
+# from rest_framework_simplejwt.token_blacklist import OutstandingToken, BlacklistedToken
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from .serializers import (RegistrationSerializer, LoginSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer)
+from .serializers import (RegistrationSerializer, LoginSerializer)
+# from .serializers import (RegistrationSerializer, LoginSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer)
 from .utils import send_activation_email, send_password_reset_email
 
 User = get_user_model()
 
 class RegisterView(generics.CreateAPIView):
-    serializer_class = RegisterSerializer
+    serializer_class = RegistrationSerializer
+    permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
         user = serializer.save()

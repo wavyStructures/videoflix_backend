@@ -1,37 +1,79 @@
-from django.core.mail import send_mail
 from django.conf import settings
-from django.urls import reverse
+from django.core.mail import EmailMultiAlternatives
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
 
 
-def send_activation_email(user, token=None, uidb64=None):
+def send_activation_email(user):
     """
-    Sends an account activation email to the user.
-    Expects the token and uidb64 for the activation URL.
+    Sends an account activation email to the given user.
+    Generates uidb64 + token automatically and sends both
+    plain text + HTML email versions.
     """
-    if not token or not uidb64:
-        raise ValueError("Token and uidb64 are required to send activation email")
 
-    activation_link = f"http://localhost:8000/api/activate/{uidb64}/{token}/"
-    subject = "Activate your Videoflix account"
-    message = f"Hi {user.username},\n\nPlease click the link below to activate your account:\n{activation_link}"
+    # generate token + uid
+    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+
+    # build activation link (pointing to frontend)
+    # activation_link = f"{settings.FRONTEND_URL}/activate/{uidb64}/{token}/"
+    activation_link = f"{settings.FRONTEND_URL}/activate.html?uid={uidb64}&token={token}"
+
+
+    # subject + message
+    subject = "Videoflix - Bitte bestätigen Sie Ihre E-Mail-Adresse"
     from_email = settings.DEFAULT_FROM_EMAIL
-    recipient_list = [user.email]
+    to = [user.email]
 
-    send_mail(subject, message, from_email, recipient_list)
-
-
-def send_password_reset_email(user, token=None, uidb64=None):
+    text_content = f"Bitte aktivieren Sie Ihre E-Mail-Adresse: {activation_link}"
+    html_content = f"""
+        <p>Klicken Sie auf den Link, um Ihr Konto zu aktivieren:</p>
+        <p><a href="{activation_link}">Konto aktivieren</a></p>
     """
-    Sends a password reset email to the user.
-    Expects the token and uidb64 for the reset URL.
-    """
-    if not token or not uidb64:
-        raise ValueError("Token and uidb64 are required to send password reset email")
 
-    reset_link = f"http://localhost:8000/api/password-reset-confirm/{uidb64}/{token}/"
-    subject = "Reset your Videoflix password"
-    message = f"Hi {user.username},\n\nPlease click the link below to reset your password:\n{reset_link}"
+    # send email
+    msg = EmailMultiAlternatives(subject, text_content, from_email, to)
+    msg.attach_alternative(html_content, "text/html")
+    msg.send()
+
+
+def send_password_reset_email(user):
+    """
+    Sendet eine E-Mail zum Zurücksetzen des Passworts.
+    Generiert automatisch uidb64 + Token und verschickt sowohl
+    Plain-Text- als auch HTML-Version.
+    """
+
+    # Token + uid erzeugen
+    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+
+    # Reset-Link (zeigt auf das Frontend)
+    reset_link = f"{settings.FRONTEND_URL}/password-reset-confirm/{uidb64}/{token}/"
+
+    # Betreff + Nachricht
+    subject = "Videoflix - Passwort zurücksetzen"
     from_email = settings.DEFAULT_FROM_EMAIL
-    recipient_list = [user.email]
+    to = [user.email]
 
-    send_mail(subject, message, from_email, recipient_list)
+    text_content = (
+        f"Hallo,\n\n"
+        f"Sie haben eine Zurücksetzung Ihres Passworts angefordert.\n"
+        f"Bitte klicken Sie auf den folgenden Link, um ein neues Passwort zu vergeben:\n\n"
+        f"{reset_link}\n\n"
+        f"Wenn Sie diese Anfrage nicht gestellt haben, können Sie diese E-Mail ignorieren."
+    )
+
+    html_content = f"""
+        <p>Hallo,</p>
+        <p>Sie haben eine Zurücksetzung Ihres Passworts angefordert.</p>
+        <p>Klicken Sie auf den folgenden Link, um ein neues Passwort zu vergeben:</p>
+        <p><a href="{reset_link}">Passwort zurücksetzen</a></p>
+        <p>Wenn Sie diese Anfrage nicht gestellt haben, können Sie diese E-Mail ignorieren.</p>
+    """
+
+    # Mail versenden
+    msg = EmailMultiAlternatives(subject, text_content, from_email, to)
+    msg.attach_alternative(html_content, "text/html")
+    msg.send()

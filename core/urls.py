@@ -24,7 +24,7 @@ from core.views import test_view
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('test/', test_view),
-    path('auth/', include('user_auth_app.urls')),
+    path('api/', include('user_auth_app.urls')),
 ]
 
 if settings.DEBUG:

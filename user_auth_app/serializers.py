@@ -1,6 +1,12 @@
 from rest_framework import serializers
+from django.conf import settings
+from django.core.mail import send_mail
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.tokens import default_token_generator
 
 User = get_user_model()
 
@@ -21,7 +27,8 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'confirmed_password']
+        fields = ['email', 'password', 'confirmed_password']
+        # fields = ['username', 'email', 'password', 'confirmed_password']
         extra_kwargs = {
             'password': {
                 'write_only': True
@@ -39,12 +46,11 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop("confirmed_password")
-        user = User.objects.create_user(
+        return User.objects.create_user(
             email=validated_data["email"],
             password=validated_data["password"],
             is_active=False,  # must activate via email
         )
-        return user
 
 
 class LoginSerializer(serializers.Serializer):

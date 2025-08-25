@@ -2,16 +2,17 @@ from django.shortcuts import render
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
-from django.utils.encoding import force_str
-from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_str, force_bytes
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
-from rest_framework import generics
+from rest_framework import serializers, generics
 from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
 from django.utils.encoding import force_bytes
-
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -22,7 +23,8 @@ from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, Bl
 
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from .serializers import (RegistrationSerializer, LoginSerializer)
+from .serializers import RegistrationSerializer, LoginSerializer, UserSerializer
+
 # from .serializers import (RegistrationSerializer, LoginSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer)
 from .utils import send_activation_email, send_password_reset_email
 
@@ -34,21 +36,7 @@ class RegisterView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         user = serializer.save()
-
-        # generate activation token
-        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
-        token = default_token_generator.make_token(user)
-
-        activation_link = f"http://localhost:8000/api/activate/{uidb64}/{token}/"
-
-        # send activation email (simplified, you can adapt for Redis/SMTP later)
-        send_mail(
-            subject="Activate your Videoflix account",
-            message=f"Click here to activate your account: {activation_link}",
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-        )
-
+        send_activation_email(user)
         return user
 
     def create(self, request, *args, **kwargs):
@@ -84,7 +72,6 @@ class ActivateView(APIView):
             return Response({"message": "Account successfully activated."}, status=status.HTTP_200_OK)
         else:
             return Response({"message": "Activation failed."}, status=status.HTTP_400_BAD_REQUEST)
-        
         
 
 def _cookie_settings():
@@ -206,6 +193,70 @@ class RefreshTokenView(APIView):
         return resp
 
 
+class PasswordResetView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get("email")
+        if not email:
+            return Response({"error": "E-Mail-Adresse erforderlich."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            # ⚠️ Sicherheit: gleiche Antwort zurückgeben,
+            # damit niemand sehen kann, ob ein Konto existiert
+            return Response({"message": "Falls ein Konto existiert, wurde ein Link geschickt."},
+                            status=status.HTTP_200_OK)
+
+        # Reset-Mail verschicken
+        send_password_reset_email(user)
+        return Response({"message": "Falls ein Konto existiert, wurde ein Link geschickt."},
+                        status=status.HTTP_200_OK)
+
+
+class PasswordConfirmView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, uidb64, token):
+        new_password = request.data.get("new_password")
+        if not new_password:
+            return Response({"error": "Neues Passwort erforderlich."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return Response({"error": "Ungültiger Link."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # Token prüfen
+        if not default_token_generator.check_token(user, token):
+            return Response({"error": "Ungültiger oder abgelaufener Token."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # Neues Passwort setzen
+        user.set_password(new_password)
+        user.save()
+
+        return Response({"message": "Passwort wurde erfolgreich geändert."},
+                        status=status.HTTP_200_OK)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # class LogoutView(APIView):
 #     def post(self, request):
@@ -214,15 +265,6 @@ class RefreshTokenView(APIView):
 # class RefreshTokenView(APIView):
 #     def post(self, request):
 #         return Response({"message": "Token refreshed"}, status=status.HTTP_200_OK)
-
-class PasswordResetView(APIView):
-    def post(self, request):
-        return Response({"message": "Password reset link sent"}, status=status.HTTP_200_OK)
-
-
-class PasswordConfirmView(APIView):
-    def post(self, request, uidb64, token):
-        return Response({"message": f"Password confirmed for {uidb64}"}, status=status.HTTP_200_OK)
 
 
 # class RegistrationView(APIView):

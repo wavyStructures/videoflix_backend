@@ -18,13 +18,11 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from rest_framework_simplejwt.tokens import RefreshToken
-# from rest_framework_simplejwt.token_blacklist import OutstandingToken, BlacklistedToken
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
-
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from .serializers import RegistrationSerializer, LoginSerializer, UserSerializer
-
 # from .serializers import (RegistrationSerializer, LoginSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer)
 from .utils import send_activation_email, send_password_reset_email
 
@@ -176,13 +174,18 @@ class RefreshTokenView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        access_max_age = int(getattr(settings, "SIMPLE_JWT", {}) \
-                             .get("ACCESS_TOKEN_LIFETIME").total_seconds())
+        access_max_age = int(
+            getattr(settings, "SIMPLE_JWT", {}) 
+            .get("ACCESS_TOKEN_LIFETIME")
+            .total_seconds()
+        )
 
         resp = Response(
-            {"detail": "Token refreshed", "access": str(new_access)},
+            # {"detail": "Token refreshed", "access": str(new_access)},
+            {"detail": "Token refreshed"    },
             status=status.HTTP_200_OK,
         )
+        
         resp.set_cookie(
             key="access_token",
             value=str(new_access),

@@ -1,5 +1,7 @@
 from django.conf import settings
+from django.urls import reverse
 from django.core.mail import EmailMultiAlternatives
+from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
@@ -12,24 +14,21 @@ def send_activation_email(user):
     plain text + HTML email versions.
     """
 
-    # generate token + uid
-    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
 
-    # build activation link (pointing to frontend)
     # activation_link = f"{settings.FRONTEND_URL}/activate/{uidb64}/{token}/"
-    activation_link = f"{settings.FRONTEND_URL}/activate.html?uid={uidb64}&token={token}"
-
-
+    activation_link = f"http://localhost:5501/pages/auth/login.html?uid={uid}&token={token}"
+    
     # subject + message
-    subject = "Videoflix - Bitte bestätigen Sie Ihre E-Mail-Adresse"
+    subject = "Videoflix - Activate your account"
     from_email = settings.DEFAULT_FROM_EMAIL
     to = [user.email]
 
-    text_content = f"Bitte aktivieren Sie Ihre E-Mail-Adresse: {activation_link}"
+    text_content = f"Please click the link below to activate your account: {activation_link}"
     html_content = f"""
-        <p>Klicken Sie auf den Link, um Ihr Konto zu aktivieren:</p>
-        <p><a href="{activation_link}">Konto aktivieren</a></p>
+        <p>Please click the link below to activate your account:</p>
+        <p><a href="{activation_link}">activating account</a></p>
     """
 
     # send email

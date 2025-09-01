@@ -4,7 +4,6 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_str, force_bytes
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
-
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,17 +12,13 @@ from rest_framework import serializers, generics
 from django.core.mail import send_mail
 from django.core.mail import EmailMultiAlternatives
 from django.utils.encoding import force_bytes
-
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
-
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.authentication import JWTAuthentication
-
 from .serializers import RegistrationSerializer, LoginSerializer, UserSerializer
-# from .serializers import (RegistrationSerializer, LoginSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer)
 from .utils import send_activation_email, send_password_reset_email
 
 User = get_user_model()
@@ -54,23 +49,52 @@ class RegisterView(generics.CreateAPIView):
             status=status.HTTP_201_CREATED,
             headers=headers
         )
-
-
 class ActivateView(APIView):
-    def get(self, request, uidb64, token):
+    def get(self, request, uid, token):
         try:
-            uid = force_str(urlsafe_base64_decode(uidb64))
-            user = User.objects.get(pk=uid)
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-            return Response({"message": "Activation failed."}, status=status.HTTP_400_BAD_REQUEST)
+            uid_decoded = urlsafe_base64_decode(uid).decode()
+            user = User.objects.get(pk=uid_decoded)
+        except Exception as e:
+            # Redirect to login with error message
+            login_url = f"http://localhost:5501/pages/auth/login.html?activation=failed"
+            return redirect(login_url)
 
         if default_token_generator.check_token(user, token):
             user.is_active = True
             user.save()
-            return Response({"message": "Account successfully activated."}, status=status.HTTP_200_OK)
+            # Redirect to login page with success message
+            login_url = f"http://localhost:5501/pages/auth/login.html?activation=success"
+            return redirect(login_url)
         else:
-            return Response({"message": "Activation failed."}, status=status.HTTP_400_BAD_REQUEST)
+            login_url = f"http://localhost:5501/pages/auth/login.html?activation=failed"
+            return redirect(login_url)
         
+        
+# class ActivateView(APIView):
+#     def get(self, request, uid, token):
+        
+#         print("Activation Request received")
+#         print("UID:", uid)
+#         print("Token:", token)
+
+#         try:
+#             uid = urlsafe_base64_decode(uid).decode()
+#             user = User.objects.get(pk=uid)
+#             print("User found:", user.email)
+#         # except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+#         except Exeption as e:
+#             print("Error decoding UID or getting user:", e)
+#             return Response({'message': 'Invalid activation link'}, status=400)
+
+#         if default_token_generator.check_token(user, token):
+#             user.is_active = True
+#             user.save()
+#             print("User activated:", user.email)
+#             return Response({'message': 'Account successfully activated!'})
+#         else:
+#             print("Token invalid or expired")    
+#             return Response({'message': 'Activation link expired or invalid'}, status=400)
+
 
 def _cookie_settings():
     # Centralize cookie security flags
@@ -147,7 +171,6 @@ class LogoutView(APIView):
             {"detail": "Logout successful! All tokens will be deleted. Refresh token is now invalid."},
             status=status.HTTP_200_OK,
         )
-        # Clear cookies
         resp.delete_cookie("access_token")
         resp.delete_cookie("refresh_token")
 
@@ -208,12 +231,9 @@ class PasswordResetView(APIView):
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            # ⚠️ Sicherheit: gleiche Antwort zurückgeben,
-            # damit niemand sehen kann, ob ein Konto existiert
             return Response({"message": "Falls ein Konto existiert, wurde ein Link geschickt."},
                             status=status.HTTP_200_OK)
 
-        # Reset-Mail verschicken
         send_password_reset_email(user)
         return Response({"message": "Falls ein Konto existiert, wurde ein Link geschickt."},
                         status=status.HTTP_200_OK)

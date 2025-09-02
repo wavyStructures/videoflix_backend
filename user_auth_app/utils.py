@@ -18,7 +18,10 @@ def send_activation_email(user):
     token = default_token_generator.make_token(user)
 
     # activation_link = f"{settings.FRONTEND_URL}/activate/{uidb64}/{token}/"
-    activation_link = f"http://localhost:5501/pages/auth/login.html?uid={uid}&token={token}"
+    # activation_link = f"http://localhost:5501/pages/auth/login.html?uid={uid}&token={token}"
+
+    activation_link = f"http://127.0.0.1:8000/api/activate/{uid}/{token}/"
+
     
     # subject + message
     subject = "Videoflix - Activate your account"

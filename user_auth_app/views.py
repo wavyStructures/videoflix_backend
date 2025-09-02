@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
@@ -50,19 +50,18 @@ class RegisterView(generics.CreateAPIView):
             headers=headers
         )
 class ActivateView(APIView):
+    permission_classes = [AllowAny]
     def get(self, request, uid, token):
         try:
             uid_decoded = urlsafe_base64_decode(uid).decode()
             user = User.objects.get(pk=uid_decoded)
         except Exception as e:
-            # Redirect to login with error message
             login_url = f"http://localhost:5501/pages/auth/login.html?activation=failed"
             return redirect(login_url)
 
         if default_token_generator.check_token(user, token):
             user.is_active = True
             user.save()
-            # Redirect to login page with success message
             login_url = f"http://localhost:5501/pages/auth/login.html?activation=success"
             return redirect(login_url)
         else:

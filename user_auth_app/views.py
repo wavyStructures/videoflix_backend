@@ -269,6 +269,23 @@ class PasswordResetView(APIView):
                         status=status.HTTP_200_OK)
 
 
+class PasswordResetRedirectView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, uidb64, token):
+        try:
+            uid = urlsafe_base64_decode(uidb64).decode()
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return redirect("http://localhost:5501/pages/auth/reset_password.html?token=invalid")
+
+        if default_token_generator.check_token(user, token):
+            return redirect(f"http://localhost:5501/pages/auth/reset_password.html?uid={uidb64}&token={token}")
+
+        return redirect("http://localhost:5501/pages/auth/reset_password.html?token=invalid")
+
+
+
 class PasswordConfirmView(APIView):
     permission_classes = [AllowAny]
 

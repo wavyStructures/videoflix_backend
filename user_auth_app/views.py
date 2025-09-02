@@ -2,12 +2,14 @@ from django.shortcuts import render, redirect
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
+from django.middleware.csrf import get_token
+
 from django.utils.encoding import force_str, force_bytes
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import serializers, generics
 from django.core.mail import send_mail
 from django.core.mail import EmailMultiAlternatives
@@ -20,6 +22,8 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from .serializers import RegistrationSerializer, LoginSerializer, UserSerializer
 from .utils import send_activation_email, send_password_reset_email
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 
 User = get_user_model()
 
@@ -76,24 +80,6 @@ class ActivateView(APIView):
 #         print("UID:", uid)
 #         print("Token:", token)
 
-#         try:
-#             uid = urlsafe_base64_decode(uid).decode()
-#             user = User.objects.get(pk=uid)
-#             print("User found:", user.email)
-#         # except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-#         except Exeption as e:
-#             print("Error decoding UID or getting user:", e)
-#             return Response({'message': 'Invalid activation link'}, status=400)
-
-#         if default_token_generator.check_token(user, token):
-#             user.is_active = True
-#             user.save()
-#             print("User activated:", user.email)
-#             return Response({'message': 'Account successfully activated!'})
-#         else:
-#             print("Token invalid or expired")    
-#             return Response({'message': 'Activation link expired or invalid'}, status=400)
-
 
 def _cookie_settings():
     # Centralize cookie security flags
@@ -142,14 +128,55 @@ class LoginView(APIView):
             max_age=refresh_max_age,
             **cookie_flags,
         )
+        
+        # ✅ Add CSRF cookie (not HttpOnly, so frontend can read it)
+        resp.set_cookie(
+            key="csrftoken",
+            value=get_token(request),
+            max_age=access_max_age,
+            secure=getattr(settings, "SESSION_COOKIE_SECURE", True),
+            samesite=getattr(settings, "SESSION_COOKIE_SAMESITE", "Lax"),
+            httponly=False,  # important: must be readable in JS
+        )
 
         return resp
 
+# class LogoutView(APIView):
+#     permission_classes = [AllowAny]
+
+#     def post(self, request):
+#         refresh_token = request.COOKIES.get('refresh_token')
+#         print("Refresh cookie:", request.COOKIES.get("refresh_token"))
+
+#         if not refresh_token:
+#             return Response(
+#                 {"detail": "Refresh token missing."},
+#                 status=status.HTTP_400_BAD_REQUEST
+#             )
+
+#         try:
+#             token = RefreshToken(refresh_token)
+#             token.blacklist()  
+#         except TokenError:
+#             return Response(
+#                 {"detail": "Invalid refresh token."},
+#                 status=status.HTTP_400_BAD_REQUEST
+#             )
+
+#         resp = Response(
+#             {"detail": "Logout successful! All tokens will be deleted. Refresh token is now invalid."},
+#             status=status.HTTP_200_OK,
+#         )
+#         resp.delete_cookie('access_token')
+#         resp.delete_cookie('refresh_token')
+
+#         return resp
+
 class LogoutView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        refresh_token = request.COOKIES.get("refresh_token")
+        refresh_token = request.COOKIES.get('refresh_token')
 
         if not refresh_token:
             return Response(
@@ -159,28 +186,32 @@ class LogoutView(APIView):
 
         try:
             token = RefreshToken(refresh_token)
-            token.blacklist()  # requires Blacklist app enabled
+            token.blacklist()  # requires 'rest_framework_simplejwt.token_blacklist' in INSTALLED_APPS
         except TokenError:
             return Response(
-                {"detail": "Invalid refresh token."},
+                {"detail": "Invalid or expired refresh token."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        resp = Response(
+        # Delete cookies
+        response = Response(
             {"detail": "Logout successful! All tokens will be deleted. Refresh token is now invalid."},
-            status=status.HTTP_200_OK,
+            status=status.HTTP_200_OK
         )
-        resp.delete_cookie("access_token")
-        resp.delete_cookie("refresh_token")
+        response.delete_cookie('access_token')
+        response.delete_cookie('refresh_token')
+        response.delete_cookie('csrftoken')
 
-        return resp
+        return response
+
+
 
 
 class RefreshTokenView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        refresh_token = request.COOKIES.get("refresh_token")
+        refresh_token = request.COOKIES.get('refresh_token')
         if not refresh_token:
             return Response(
                 {"detail": "Refresh token missing."},
@@ -197,8 +228,8 @@ class RefreshTokenView(APIView):
             )
 
         access_max_age = int(
-            getattr(settings, "SIMPLE_JWT", {}) 
-            .get("ACCESS_TOKEN_LIFETIME")
+            getattr(settings, 'SIMPLE_JWT', {}) 
+            .get('ACCESS_TOKEN_LIFETIME')
             .total_seconds()
         )
 
@@ -289,34 +320,3 @@ class PasswordConfirmView(APIView):
 #         return Response({"message": "Token refreshed"}, status=status.HTTP_200_OK)
 
 
-# class RegistrationView(APIView):
-#     permission_classes = [AllowAny]
-
-#     def post(self, request):
-#         serializer = RegistrationSerializer(data=request.data)
-
-#         data = {}
-#         if serializer.is_valid():
-#             saved_account = serializer.save()
-#             data = {
-#                 'username': saved_account.username,
-#                 'email': saved_account.email,
-#                 'user_id': saved_account.pk
-#             }
-#             return Response(data)
-#         else:
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-# class RegisterView(APIView):
-#     def post(self, request):
-#         return Response({"message": "User registered"}, status=status.HTTP_201_CREATED)
-        
-
-# class ActivateAccountView(APIView):
-#     def get(self, request, uidb64, token):
-#         return Response({"message": f"Account activated for {uidb64}"}, status=status.HTTP_200_OK)
-
-# class LoginView(APIView):
-#     def post(self, request):
-#         return Response({"message": "User logged in"}, status=status.HTTP_200_OK)

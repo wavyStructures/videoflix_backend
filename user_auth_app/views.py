@@ -72,20 +72,11 @@ class ActivateView(APIView):
             login_url = f"http://localhost:5501/pages/auth/login.html?activation=failed"
             return redirect(login_url)
         
-        
-# class ActivateView(APIView):
-#     def get(self, request, uid, token):
-        
-#         print("Activation Request received")
-#         print("UID:", uid)
-#         print("Token:", token)
-
 
 def _cookie_settings():
-    # Centralize cookie security flags
     return dict(
         httponly=True,
-        secure=getattr(settings, "SESSION_COOKIE_SECURE", True),  # True in prod (HTTPS)
+        secure=getattr(settings, "SESSION_COOKIE_SECURE", True), 
         samesite=getattr(settings, "SESSION_COOKIE_SAMESITE", "Lax"),
     )
 
@@ -100,7 +91,6 @@ class LoginView(APIView):
         refresh = RefreshToken.for_user(user)
         access = refresh.access_token
 
-        # Lifetimes (to set cookie max_age)
         access_max_age = int(getattr(settings, "SIMPLE_JWT", {}) \
                              .get("ACCESS_TOKEN_LIFETIME").total_seconds())
         refresh_max_age = int(getattr(settings, "SIMPLE_JWT", {}) \
@@ -109,7 +99,7 @@ class LoginView(APIView):
         resp = Response(
             {
                 "detail": "Login successful",
-                "user": UserSerializer(user).data,  # {"id": ..., "email": ...}
+                "user": UserSerializer(user).data,  
             },
             status=status.HTTP_200_OK,
         )
@@ -141,36 +131,6 @@ class LoginView(APIView):
 
         return resp
 
-# class LogoutView(APIView):
-#     permission_classes = [AllowAny]
-
-#     def post(self, request):
-#         refresh_token = request.COOKIES.get('refresh_token')
-#         print("Refresh cookie:", request.COOKIES.get("refresh_token"))
-
-#         if not refresh_token:
-#             return Response(
-#                 {"detail": "Refresh token missing."},
-#                 status=status.HTTP_400_BAD_REQUEST
-#             )
-
-#         try:
-#             token = RefreshToken(refresh_token)
-#             token.blacklist()  
-#         except TokenError:
-#             return Response(
-#                 {"detail": "Invalid refresh token."},
-#                 status=status.HTTP_400_BAD_REQUEST
-#             )
-
-#         resp = Response(
-#             {"detail": "Logout successful! All tokens will be deleted. Refresh token is now invalid."},
-#             status=status.HTTP_200_OK,
-#         )
-#         resp.delete_cookie('access_token')
-#         resp.delete_cookie('refresh_token')
-
-#         return resp
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
@@ -186,7 +146,7 @@ class LogoutView(APIView):
 
         try:
             token = RefreshToken(refresh_token)
-            token.blacklist()  # requires 'rest_framework_simplejwt.token_blacklist' in INSTALLED_APPS
+            token.blacklist() 
         except TokenError:
             return Response(
                 {"detail": "Invalid or expired refresh token."},
@@ -232,10 +192,9 @@ class RefreshTokenView(APIView):
             .get('ACCESS_TOKEN_LIFETIME')
             .total_seconds()
         )
-
+        
         resp = Response(
-            # {"detail": "Token refreshed", "access": str(new_access)},
-            {"detail": "Token refreshed"    },
+            {"detail": "Token refreshed", "access": str(new_access)},
             status=status.HTTP_200_OK,
         )
         
@@ -307,33 +266,11 @@ class PasswordConfirmView(APIView):
             return Response({"error": "Ungültiger oder abgelaufener Token."},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        # Neues Passwort setzen
         user.set_password(new_password)
         user.save()
 
         return Response({"message": "Passwort wurde erfolgreich geändert."},
                         status=status.HTTP_200_OK)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# class LogoutView(APIView):
-#     def post(self, request):
-#         return Response({"message": "User logged out"}, status=status.HTTP_200_OK)
-
-# class RefreshTokenView(APIView):
-#     def post(self, request):
-#         return Response({"message": "Token refreshed"}, status=status.HTTP_200_OK)
 
 

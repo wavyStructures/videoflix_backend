@@ -3,6 +3,7 @@ import os
 from django.http import FileResponse, Http404
 from django.conf import settings
 from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
@@ -11,13 +12,17 @@ from .models import Video
 from .serializers import VideoSerializer
 
 
-class VideoListView(APIView):
-    permission_classes = [IsAuthenticated]  # JWT required
+# class VideoListView(APIView):
+#     permission_classes = [IsAuthenticated]  # JWT required
 
-    def get(self, request):
-        videos = Video.objects.all()
-        serializer = VideoSerializer(videos, many=True, context={'request': request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
+#     def get(self, request):
+#         videos = Video.objects.all()
+#         serializer = VideoSerializer(videos, many=True, context={'request': request})
+#         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class VideoListView(ListAPIView):
+    queryset = Video.objects.all().order_by("-created_at")
+    serializer_class = VideoSerializer
 
 
 class HLSIndexView(APIView):

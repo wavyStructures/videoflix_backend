@@ -7,3 +7,4 @@ class VideoflixAppConfig(AppConfig):
     
     def ready(self):
         import videoflix_app.signals
+

@@ -1,12 +1,31 @@
 from videoflix_app.tasks import convert_480p
-from .models import Video
 from django.dispatch import receiver
 from django.db.models.signals import post_save, post_delete 
+from django.conf import settings
+from .models import Video
+from .tasks import convert_to_hls, generate_thumbnail
 import os
+
 
 @receiver(post_save, sender=Video)
 def video_post_save(sender, instance, created, **kwargs):
     print("post_save fired")
+
+    if created and instance.video_file:
+        base_name = os.path.splitext(os.path.basename(instance.video_file.name))[0]
+        hls_output_dir = os.path.join(settings.MEDIA_ROOT, "videos/hls", base_name)
+        thumbnail_path = os.path.join(settings.MEDIA_ROOT, "videos/thumbnails", f"{base_name}.jpg")
+
+        # Convert to HLS
+        instance.hls_dir = convert_to_hls(instance.video_file.path, hls_output_dir, base_name)
+
+        # Generate thumbnail
+        instance.thumbnail = generate_thumbnail(instance.video_file.path, thumbnail_path)
+
+        # Save updated fields
+        instance.save(update_fields=["hls_dir", "thumbnail"])
+
+
     if created and instance.video_file and instance.video_file.name:
         file_path = instance.video_file.path
         print(f"File path is: {file_path}")

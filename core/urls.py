@@ -25,6 +25,10 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('test/', test_view),
     path('api/', include('user_auth_app.urls')),
+    # path('api/', include('videoflix_app.urls')),
+
+    # path('api/auth/', include('user_auth_app.urls')),
+    path('api/video/', include('videoflix_app.urls')),
 ]
 
 if settings.DEBUG:

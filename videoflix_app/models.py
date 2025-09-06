@@ -9,8 +9,28 @@ class Video(models.Model):
         
     # video_url = models.URLField()
     # thumbnail_url = models.URLField()
-    
+
+    thumbnail = models.ImageField(upload_to="thumbnails/", blank=True, null=True)
+    category = models.CharField(max_length=50, default="General")
+    hls_dir = models.CharField(max_length=255, blank=True, null=True)
+
+         
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)  # save original file first
+
+        # paths
+        base_name = os.path.splitext(os.path.basename(self.video_file.name))[0]
+        output_dir = os.path.join(settings.MEDIA_ROOT, "videos/hls", base_name)
+        
+        # convert to HLS
+        self.hls_dir = convert_to_hls(self.video_file.path, output_dir, base_name)
+        
+        # generate thumbnail
+        thumb_path = os.path.join(settings.MEDIA_ROOT, "videos/thumbnails", f"{base_name}.jpg")
+        self.thumbnail = generate_thumbnail(self.video_file.path, thumb_path)
+        
+        super().save(update_fields=["hls_dir", "thumbnail"])
+
     def __str__(self):
-        return self.title
-    
+            return self.title
     

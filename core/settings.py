@@ -234,3 +234,9 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
+
+
+try:
+    from .settings_local import *
+except ImportError:
+    pass

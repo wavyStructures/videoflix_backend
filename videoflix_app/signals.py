@@ -1,4 +1,4 @@
-from videoflix_app.tasks import convert_480p
+# from videoflix_app.tasks import convert_480p
 from django.dispatch import receiver
 from django.db.models.signals import post_save, post_delete 
 from django.conf import settings
@@ -31,7 +31,7 @@ def video_post_save(sender, instance, created, **kwargs):
         print(f"File path is: {file_path}")
         if os.path.isfile(file_path):
             print("File exists, converting...")
-            convert_480p(file_path)
+            # convert_480p(file_path)
         else:
             print("File does not exist yet")
             

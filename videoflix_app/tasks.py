@@ -7,9 +7,8 @@ from django.core.cache import cache
 from .models import Video
 
 
-# FFMPEG_BIN = "ffmpeg"  
+FFMPEG_BIN = "ffmpeg"  
 # FFMPEG_BIN = r"C:\ffmpeg\bin\ffmpeg.exe"
-FFMPEG_BIN = getattr(settings, "FFMPEG_BIN", "ffmpeg")  
 HLS_SEG_DUR = int(getattr(settings, "HLS_SEG_DUR", 4))
 
 RENDITIONS = [
@@ -32,8 +31,13 @@ def _run_ffmpeg(command: list[str]):
 
     return process
 
+
 def _rel_to_media(p: Path):
+    if not p or not p.exists():
+        raise RuntimeError(f"Cannot calculate relative path, file does not exist: {p}")
     return os.path.relpath(p.as_posix(), settings.MEDIA_ROOT).replace("\\", "/")
+
+
 
 def convert_to_hls(source_path: str, video_id: int, make_trailer: bool = True, make_thumbnail: bool = True) -> str:
     """
@@ -42,119 +46,81 @@ def convert_to_hls(source_path: str, video_id: int, make_trailer: bool = True, m
     source = Path(source_path)
     if not source.exists():
         raise RuntimeError(f"File {source} does not exist")
+    
+    base_name = source.stem   
 
-    output_dir = os.path.join(settings.MEDIA_ROOT, "hls", str(video_id))
+    # MEDIA_ROOT/hls/<video_id>/
+    output_dir = Path(settings.MEDIA_ROOT) / "hls" / str(video_id)
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     variant_playlists: list[tuple[Path, str, str]] = []
-    
-    #1) build renditions
+
+    # 1) build renditions
     for rendition in RENDITIONS:
         stream_dir = output_dir / rendition["name"]
         stream_dir.mkdir(parents=True, exist_ok=True)
-        
-        variant_playlists.append((stream_dir / f"{rendition['name']}.m3u8", rendition["scale"], rendition["bitrate"]))
-        
+
+        playlist_path = stream_dir / "index.m3u8"
+        scale = rendition["scale"]
+        bitrate = rendition["bitrate"]
+
+        variant_playlists.append((playlist_path, scale, bitrate))
+
+        width, height = scale.split(":")
         segment_template = (stream_dir / "%d.ts").as_posix()
-        width, height = rendition["scale"].split(":")
-        
+
         command = [
-            FFMPEG_BIN, 
+            FFMPEG_BIN,
             "-i", source.as_posix(),
             "-vf", f"scale=w={width}:h={height}:force_original_aspect_ratio=decrease,"
                    f"pad=w=ceil(iw/2)*2:h=ceil(ih/2)*2",
-            
-            "-hls_time", "10",            
-            "-hls_list_size", "0",        
+            "-b:v", bitrate,
+            "-hls_time", "4",
+            "-hls_list_size", "0",
             "-f", "hls",
-            segment_template,
+            playlist_path.as_posix()
         ]
-        _run_ffmpeg(command)
         subprocess.run(command, check=True)
-        
-        #2) write master playlist
-        master_path = output_dir / "master.m3u8"
-        with master_path.open("w", encoding="utf-8") as m3u8:
-            m3u8.write("#EXTM3U\n")
-        for vp, bitrate, scale in variant_playlists:
+
+    # 2) write master playlist
+    master_path = output_dir / "master.m3u8"
+    with master_path.open("w", encoding="utf-8") as m3u8:
+        m3u8.write("#EXTM3U\n")
+        for vp, scale, bitrate in variant_playlists:
             w, h = scale.split(":")
-            # BANDWIDTH expects an integer in bits/sec; we approximate from '800k' -> 800000
-            m3u8.write(f"#EXT-X-STREAM-INF:BANDWIDTH={bitrate[:-1]}000,RESOLUTION={w}x{h}\n")
+            bw_int = int(bitrate.rstrip("k")) * 1000
+            m3u8.write(f"#EXT-X-STREAM-INF:BANDWIDTH={bw_int},RESOLUTION={w}x{h}\n")
             rel = vp.relative_to(output_dir)
             m3u8.write(f"{rel.as_posix()}\n")
 
-        # 3) trailer and thumbnail
-        trailer_path = output_dir / "trailer.mp4"
-        if make_trailer:
-            _run_ffmpeg([
-                FFMPEG_BIN, "-y",
-                "-i", source.as_posix(),
-                "-ss", "00:00:05", "-t", "5",
-                "-c:v", "libx264", "-c:a", "aac",
-                trailer_path.as_posix()
-            ])
+    # 3) trailer and thumbnail
+    trailer_path = output_dir / "trailer.mp4"
+    if make_trailer:
+        subprocess.run([
+            FFMPEG_BIN, "-y",
+            "-i", source.as_posix(),
+            "-ss", "00:00:05", "-t", "5",
+            "-c:v", "libx264", "-c:a", "aac",
+            trailer_path.as_posix()
+        ], check=True)
 
-        thumb_path = output_dir / "thumbnail.jpg"
-        if make_thumbnail:
-            _run_ffmpeg([
-                FFMPEG_BIN, "-y",
-                "-ss", "00:00:01",  # seek first for faster thumb
-                "-i", source.as_posix(),
-                "-frames:v", "1",
-                thumb_path.as_posix()
-            ])
-        
-        
-        # 4) update DB fields atomically
-        with transaction.atomic():
-            v = Video.objects.select_for_update().get(pk=video_id)
-            if hasattr(v, "hls_master"):
-                v.hls_master = _rel_to_media(master_path)
-            else:
-                v.video_file = _rel_to_media(master_path)
+    thumb_path = output_dir / "thumbnail.jpg"
+    if make_thumbnail:
+        subprocess.run([
+            FFMPEG_BIN, "-y",
+            "-ss", "00:00:01",
+            "-i", source.as_posix(),
+            "-frames:v", "1",
+            thumb_path.as_posix()
+        ], check=True)
 
-            if trailer_path.exists() and hasattr(v, "trailer"):
-                v.trailer = _rel_to_media(trailer_path)
-            if thumb_path.exists() and hasattr(v, "thumbnail"):
-                v.thumbnail = _rel_to_media(thumb_path)
-            v.save()
-
-        # 5) best-effort cache clear (harmless if no cache backend)
-        try:
-            cache.clear()
-        except Exception:
-            pass
-
-        return master_path.as_posix()
-    
-    
-    
-    
-            
-            
-            
-            
-            
-            
-            
-                            
-                
-    hls_path = os.path.join(output_dir, f"{base_name}.m3u8")
-
-    # FFmpeg command for HLS
-    command = [
-        "ffmpeg",
-        "-i", input_file,
-        "-profile:v", "baseline",
-        "-level", "3.0",
-        "-start_number", "0",
-        "-hls_time", "10",            
-        "-hls_list_size", "0",        
-        "-f", "hls",
-        hls_path
-    ]
-    subprocess.run(command, check=True)
-    return hls_path
+    # return master_path.as_posix()
+    try:
+        video = Video.objects.get(pk=video_id)
+        video.trailer = f"hls/{video_id}/480p/index.m3u8"
+        video.save()
+    except Video.DoesNotExist:
+        pass
 
 def generate_thumbnail(input_file, output_file, time="00:00:01"):
     """

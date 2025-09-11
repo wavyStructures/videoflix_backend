@@ -1,54 +1,108 @@
-# from videoflix_app.tasks import convert_480p
-from django.dispatch import receiver
+import os
+from pathlib import Path
 from django.db.models.signals import post_save, post_delete 
+from django.dispatch import receiver
 from django.conf import settings
 from .models import Video
 from .tasks import convert_to_hls, generate_thumbnail
-import os
 
 
 @receiver(post_save, sender=Video)
 def video_post_save(sender, instance, created, **kwargs):
-    print("post_save fired")
-
+    """
+    Runs HLS conversion after a new video is uploaded.
+    Safely updates model fields for frontend compatibility.
+    """
     if created and instance.video_file:
-        base_name = os.path.splitext(os.path.basename(instance.video_file.name))[0]
-        hls_output_dir = os.path.join(settings.MEDIA_ROOT, "videos/hls", base_name)
-        thumbnail_path = os.path.join(settings.MEDIA_ROOT, "videos/thumbnails", f"{base_name}.jpg")
+        print(f"Running HLS pipeline for: {instance.video_file.path}")
 
-        # Convert to HLS
-        instance.hls_dir = convert_to_hls(instance.video_file.path, hls_output_dir, base_name)
+        try:
+            # Convert video to HLS + generate master playlist, trailer, thumbnail
+            master_path = convert_to_hls(
+                source_path=instance.video_file.path,
+                video_id=instance.id,
+                make_trailer=True,
+                make_thumbnail=True,
+            )
 
-        # Generate thumbnail
-        instance.thumbnail = generate_thumbnail(instance.video_file.path, thumbnail_path)
+            # Update master playlist field safely
+            if master_path and os.path.exists(master_path):
+                instance.hls_master.name = os.path.relpath(master_path, settings.MEDIA_ROOT)
 
-        # Save updated fields
-        instance.save(update_fields=["hls_dir", "thumbnail"])
+            # Update trailer field for frontend: point to 480p/index.m3u8
+            hls_480_index = Path(settings.MEDIA_ROOT) / "hls" / str(instance.id) / "480p" / "index.m3u8"
+            if hls_480_index.exists():
+                instance.trailer.name = os.path.relpath(hls_480_index, settings.MEDIA_ROOT)
 
+            # Update thumbnail field
+            thumb_path = Path(settings.MEDIA_ROOT) / "hls" / str(instance.id) / "thumbnail.jpg"
+            if thumb_path.exists():
+                instance.thumbnail.name = os.path.relpath(thumb_path, settings.MEDIA_ROOT)
 
-    if created and instance.video_file and instance.video_file.name:
-        file_path = instance.video_file.path
-        print(f"File path is: {file_path}")
-        if os.path.isfile(file_path):
-            print("File exists, converting...")
-            # convert_480p(file_path)
-        else:
-            print("File does not exist yet")
-            
-        # convert_480p(instance.video_file.path)
-        # instance.video_file.seek(0)
-        # instance.video_file.save(instance.video_file.name, instance.video_file, save=False
+            # Save updates
+            instance.save(update_fields=["hls_master", "trailer", "thumbnail"])
 
+        except Exception as e:
+            print(f"Error running HLS conversion: {e}")
 
 @receiver(post_delete, sender=Video)
 def auto_delete_file_on_delete(sender, instance, **kwargs):
     """
-    Deletes file from filesystem
-    when corresponding `Video` object is deleted.
+    Deletes files from filesystem when the Video object is deleted.
     """
+    # Delete uploaded video file
     if instance.video_file and instance.video_file.name:
         if os.path.isfile(instance.video_file.path):
             os.remove(instance.video_file.path)
+
+    # Delete HLS folder
+    hls_dir = Path(settings.MEDIA_ROOT) / "hls" / str(instance.id)
+    if hls_dir.exists() and hls_dir.is_dir():
+        for root, dirs, files in os.walk(hls_dir, topdown=False):
+            for name in files:
+                os.remove(Path(root) / name)
+            for name in dirs:
+                os.rmdir(Path(root) / name)
+        hls_dir.rmdir()
+
+
+
+
+
+        # master_path = convert_to_hls(
+        #     source_path=instance.video_file.path,
+        #     video_id=instance.id,
+        #     make_trailer=True,
+        #     make_thumbnail=True,
+        # )
+
+        # try:
+        #     if master_path and os.path.exists(master_path):
+        #         instance.hls_master.name = os.path.relpath(master_path, settings.MEDIA_ROOT)
+        # except Exception as e:
+        #     print(f"Error setting hls_master: {e}")
+
+
+        # trailer_path = os.path.join(settings.MEDIA_ROOT, "hls", str(instance.id), "trailer.mp4")
+        # thumb_path = os.path.join(settings.MEDIA_ROOT, "hls", str(instance.id), "thumbnail.jpg")
+
+        # if os.path.exists(trailer_path):
+        #     instance.trailer.name = os.path.relpath(trailer_path, settings.MEDIA_ROOT)
+        # if os.path.exists(thumb_path):
+        #     instance.thumbnail.name = os.path.relpath(thumb_path, settings.MEDIA_ROOT)
+
+        # instance.save(update_fields=["hls_master", "trailer", "thumbnail"])
+    
+
+# @receiver(post_delete, sender=Video)
+# def auto_delete_file_on_delete(sender, instance, **kwargs):
+#     """
+#     Deletes file from filesystem
+#     when corresponding `Video` object is deleted.
+#     """
+#     if instance.video_file and instance.video_file.name:
+#         if os.path.isfile(instance.video_file.path):
+#             os.remove(instance.video_file.path)
             
             
             

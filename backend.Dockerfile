@@ -5,7 +5,8 @@ LABEL version="1.0"
 LABEL description="Python 3.14.0a7 Alpine 3.21"
 
 WORKDIR /app
-
+COPY requirements.txt .
+RUN pip install -r requirements.txt
 COPY . .
 
 RUN apk update && \
@@ -21,3 +22,9 @@ RUN apk update && \
 EXPOSE 8000
 
 ENTRYPOINT [ "./backend.entrypoint.sh" ]
+
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .

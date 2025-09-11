@@ -1,18 +1,22 @@
-from .settings import *
+# from .settings import *
 
-# --- Override for local runserver development ---
+# # --- Override for local runserver development ---
 
-# Use SQLite for maximum simplicity:
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-}
+# # Use SQLite for maximum simplicity:
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "db.sqlite3",
+#     }
+# }
 
-DEBUG = True
+# DEBUG = True
 
-FRONTEND_URL = "http://localhost:5501"   
-BACKEND_URL = "http://127.0.0.1:8000"
+# FRONTEND_URL = "http://localhost:5501"   
+# BACKEND_URL = "http://127.0.0.1:8000"
 
-FFMPEG_BIN = r"C:\ffmpeg\bin\ffmpeg.exe"
+# FFMPEG_BIN = r"C:\ffmpeg\bin\ffmpeg.exe"  
+# HLS_SEG_DUR = 4  
+
+
+

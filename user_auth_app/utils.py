@@ -9,8 +9,7 @@ from django.utils.encoding import force_bytes
 def send_activation_email(user):
     """
     Sends an account activation email to the given user.
-    Generates uidb64 + token automatically and sends both
-    plain text + HTML email versions.
+    Generates uidb64 + token automatically and sends both plain text + HTML email versions.
     """
 
     uid = urlsafe_base64_encode(force_bytes(user.pk))

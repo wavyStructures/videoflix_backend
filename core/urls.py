@@ -26,7 +26,7 @@ urlpatterns = [
     path("test/", test_view),
 
     # API endpoints
-    path("api/auth/", include("user_auth_app.urls")),
+    path("api/", include("user_auth_app.urls")),
     path("api/video/", include("videoflix_app.urls")),
 
     # HLS static files (served from MEDIA_ROOT/videos)

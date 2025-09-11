@@ -116,16 +116,6 @@ DATABASES = {
         "PORT": int(os.getenv("DB_PORT", 5432)),
     }
 }
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.postgresql",
-#         "NAME": os.environ.get("DB_NAME", default="videoflix_db"),
-#         "USER": os.environ.get("DB_USER", default="videoflix_user"),
-#         "PASSWORD": os.environ.get("DB_PASSWORD", default="supersecretpassword"),
-#         "HOST": os.environ.get("DB_HOST", default="db"),
-#         "PORT": os.environ.get("DB_PORT", default=5432)
-#     }
-# }
 
 CACHES = {
     "default": {
@@ -141,8 +131,8 @@ CACHES = {
 RQ_QUEUES = {
     'default': {
         'HOST': os.environ.get("REDIS_HOST", default="redis"),
-        'PORT': os.environ.get("REDIS_PORT", default=6379),
-        'DB': os.environ.get("REDIS_DB", default=0),
+        'PORT': int(os.environ.get("REDIS_PORT", default=6379)),
+        'DB': int(os.environ.get("REDIS_DB", default=0)),
         'DEFAULT_TIMEOUT': 900,
         'REDIS_CLIENT_KWARGS': {},
     },
@@ -209,7 +199,14 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5501")
 BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
 
 # Email settings
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+EMAIL_BACKEND = os.getenv(
+    "DJANGO_EMAIL_BACKEND",
+    "django.core.mail.backends.smtp.EmailBackend"  # fallback for production
+)
+
 EMAIL_HOST = os.getenv("EMAIL_HOST", "mail.gmx.net")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "anjainfrance@gmx.de")

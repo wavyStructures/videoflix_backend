@@ -19,6 +19,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 from rest_framework_simplejwt.exceptions import TokenError
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from .serializers import RegistrationSerializer, LoginSerializer, UserSerializer
 from .utils import send_activation_email, send_password_reset_email
@@ -41,7 +42,6 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = self.perform_create(serializer)
 
-        # return token (demo purpose only, frontend ignores)
         token = default_token_generator.make_token(user)
         uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
         headers = self.get_success_headers(serializer.data)
@@ -53,25 +53,32 @@ class RegisterView(generics.CreateAPIView):
             status=status.HTTP_201_CREATED,
             headers=headers
         )
+
+        
 class ActivateView(APIView):
     permission_classes = [AllowAny]
-    def get(self, request, uid, token):
+
+    def get(self, request, uidb64, token):
         try:
-            uid_decoded = urlsafe_base64_decode(uid).decode()
-            user = User.objects.get(pk=uid_decoded)
-        except Exception as e:
-            login_url = f"http://localhost:5501/pages/auth/login.html?activation=failed"
-            return redirect(login_url)
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, ObjectDoesNotExist):
+            return Response(
+                    {"message": "Activation failed."},
+                    status=status.HTTP_400_BAD_REQUEST
+            )
 
         if default_token_generator.check_token(user, token):
             user.is_active = True
             user.save()
-            login_url = f"http://localhost:5501/pages/auth/login.html?activation=success"
-            return redirect(login_url)
+
+            return Response({"message": "Account successfully activated."}, status=status.HTTP_200_OK)
         else:
-            login_url = f"http://localhost:5501/pages/auth/login.html?activation=failed"
-            return redirect(login_url)
-        
+            return Response(
+                    {"message": "Activation failed."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
 
 def _cookie_settings():
     return dict(
@@ -154,13 +161,19 @@ class LogoutView(APIView):
             )
 
         # Delete cookies
+        cookie_flags = _cookie_settings()
+
         response = Response(
             {"detail": "Logout successful! All tokens will be deleted. Refresh token is now invalid."},
             status=status.HTTP_200_OK
         )
-        response.delete_cookie('access_token')
-        response.delete_cookie('refresh_token')
-        response.delete_cookie('csrftoken')
+        response.delete_cookie(
+            "csrftoken",
+            path="/",
+            secure=getattr(settings, "SESSION_COOKIE_SECURE", True),
+            samesite=getattr(settings, "SESSION_COOKIE_SAMESITE", "Lax"),
+            httponly=False,
+        )
 
         return response
 

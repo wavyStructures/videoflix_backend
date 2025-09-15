@@ -44,7 +44,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
         return User.objects.create_user(
             email=validated_data["email"],
             password=validated_data["password"],
-            is_active=False,  # must activate via email
+            is_active=False,  
         )
 
 
@@ -56,7 +56,6 @@ class LoginSerializer(serializers.Serializer):
         email = attrs.get('email')
         password = attrs.get('password')
 
-         # If your CustomUser has USERNAME_FIELD = "email", this works out of the box.
         user = authenticate(username=email, password=password)
         if not user:
             raise serializers.ValidationError("Invalid email or password.")

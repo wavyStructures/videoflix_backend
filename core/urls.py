@@ -25,42 +25,11 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("test/", test_view),
 
-    # API endpoints
     path("api/", include("user_auth_app.urls")),
     path("api/video/", include("videoflix_app.urls")),
 
-    # HLS static files (served from MEDIA_ROOT/videos)
     re_path(r"^videos/(?P<path>.*)$", serve, {"document_root": settings.MEDIA_ROOT / "videos"}),
 ]
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
-
-
-
-# from django.contrib import admin
-# from django.urls import path, include
-# from django.conf import settings
-# from django.conf.urls.static import static
-# from core.views import test_view
-# from django.urls import re_path
-
-
-# urlpatterns = [
-#     path('admin/', admin.site.urls),
-#     path('test/', test_view),
-#     path('api/', include('user_auth_app.urls')),
-#     # path('api/', include('videoflix_app.urls')),
-
-#     # path('api/auth/', include('user_auth_app.urls')),
-#     path('api/video/', include('videoflix_app.urls')),
-#     re_path(r'^api/video/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT / 'videos'}),
-
-# ]
-
-# if settings.DEBUG:
-#     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    
-    
-

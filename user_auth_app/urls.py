@@ -6,13 +6,13 @@ from .views import (
     RefreshTokenView, 
     PasswordResetView, PasswordConfirmView, 
     PasswordResetRedirectView
-)
+    )
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('login/', LoginView.as_view(), name='login'),
     path('logout/', LogoutView.as_view(), name='logout'),
-    path('activate/<uid>/<token>/', ActivateView.as_view(), name="activate"),
+    path('activate/<uidb64>/<token>/', ActivateView.as_view(), name="activate"),
 
     path('token/refresh/', RefreshTokenView.as_view(), name='token_refresh'),
     path('password_reset/', PasswordResetView.as_view(), name='password_reset'),

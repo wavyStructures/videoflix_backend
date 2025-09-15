@@ -16,3 +16,5 @@ class CookieJWTAuthentication(BaseAuthentication):
             return (user, None)
         except Exception:
             raise AuthenticationFailed("Invalid or expired token")
+
+

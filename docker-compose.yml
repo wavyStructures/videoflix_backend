@@ -1,8 +1,6 @@
 services:
   db:
-    # image: postgres:latest
     image: postgres:15-alpine
-    # platform: linux/amd64
     container_name: videoflix_database
     env_file: .env
     environment:
@@ -15,9 +13,7 @@ services:
       - "5432:5432"
 
   redis:
-    # image: redis:latest
     image: redis:7-alpine
-    # platform: linux/amd64
     container_name: videoflix_redis
     volumes:
       - redis_data:/data
@@ -34,8 +30,11 @@ services:
     container_name: videoflix_backend
 
     volumes:
-      - .:/app
-      # - videoflix_media:/app/media
+      - ./core:/app/core
+      - ./user_auth_app:/app/user_auth_app
+      - ./videoflix_app:/app/videoflix_app
+      - ./manage.py:/app/manage.py
+      - ./backend.entrypoint.sh:/app/backend.entrypoint.sh
       - ./media:/app/media
       - videoflix_static:/app/static
     ports:

@@ -9,13 +9,16 @@ from django.utils.encoding import force_bytes
 def send_activation_email(user):
     """
     Sends an account activation email to the given user.
-    Generates uidb64 + token automatically and sends both plain text + HTML email versions.
+    Generates uidb64 + token automatically.
     """
 
-    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    FRONTEND_URL = "http://127.0.0.1:5501/pages/auth/activate.html"
+
+
+    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
 
-    activation_link = f"http://127.0.0.1:8000/api/activate/{uid}/{token}/"
+    activation_link = f"{FRONTEND_URL}?uid={uidb64}&token={token}"
     subject = "Videoflix - Activate your account"
     from_email = settings.DEFAULT_FROM_EMAIL
     to = [user.email]

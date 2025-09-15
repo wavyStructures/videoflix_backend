@@ -16,6 +16,8 @@ import os
 
 load_dotenv()
 
+RUNNING_IN_DOCKER = os.getenv("RUNNING_IN_DOCKER", "False").lower() in ("1", "true", "yes")
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -112,15 +114,20 @@ DATABASES = {
         "NAME": os.getenv("DB_NAME", "videoflix_db"),
         "USER": os.getenv("DB_USER", "videoflix_user"),
         "PASSWORD": os.getenv("DB_PASSWORD", "supersecretpassword"),
-        "HOST": os.getenv("DB_HOST", "db"),      
+        "HOST": "videoflix_database" if RUNNING_IN_DOCKER else "127.0.0.1",
         "PORT": int(os.getenv("DB_PORT", 5432)),
     }
 }
 
+# Redis host depending on environment
+REDIS_HOST = "videoflix_redis" if RUNNING_IN_DOCKER else "127.0.0.1"
+REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+REDIS_DB = int(os.getenv("REDIS_DB", 0))
+
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": os.environ.get("REDIS_LOCATION", default="redis://redis:6379/1"),
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient"
         },
@@ -130,9 +137,9 @@ CACHES = {
 
 RQ_QUEUES = {
     'default': {
-        'HOST': os.environ.get("REDIS_HOST", default="redis"),
-        'PORT': int(os.environ.get("REDIS_PORT", default=6379)),
-        'DB': int(os.environ.get("REDIS_DB", default=0)),
+        'HOST': REDIS_HOST,
+        'PORT': REDIS_PORT,
+        'DB': REDIS_DB,
         'DEFAULT_TIMEOUT': 900,
         'REDIS_CLIENT_KWARGS': {},
     },
@@ -237,3 +244,6 @@ try:
     from .settings_local import *
 except ImportError:
     pass
+
+
+

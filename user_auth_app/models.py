@@ -12,7 +12,7 @@ class CustomUserManager(BaseUserManager):
         email = self.normalize_email(email)
         
         if not extra_fields.get("username"):
-            extra_fields["username"] = email.split("@")[0]
+            extra_fields["username"] = email
         
         extra_fields.setdefault("is_active", False)
 

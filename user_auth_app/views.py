@@ -106,7 +106,10 @@ class LoginView(APIView):
         resp = Response(
             {
                 "detail": "Login successful",
-                "user": UserSerializer(user).data,  
+                "user": {
+                    "id": user.id,
+                    "username": user.username, 
+                },  
             },
             status=status.HTTP_200_OK,
         )
@@ -143,41 +146,30 @@ class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        refresh_token = request.COOKIES.get('refresh_token')
-
-        if not refresh_token:
-            return Response(
-                {"detail": "Refresh token missing."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
         try:
+            refresh_token = request.COOKIES.get('refresh_token')
+
+            if not refresh_token:
+                return Response(
+                    {"detail": "Refresh token missing."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             token = RefreshToken(refresh_token)
             token.blacklist() 
-        except TokenError:
-            return Response(
-                {"detail": "Invalid or expired refresh token."},
-                status=status.HTTP_400_BAD_REQUEST
+
+            response = Response(
+                {"detail": "Logout successful! All tokens will be deleted. Refresh token is now invalid."},
+                status=status.HTTP_200_OK
             )
 
-        # Delete cookies
-        cookie_flags = _cookie_settings()
+            response.delete_cookie("access_token", path="/")
+            response.delete_cookie("refresh_token", path="/")
+            response.delete_cookie("csrftoken", path="/")
 
-        response = Response(
-            {"detail": "Logout successful! All tokens will be deleted. Refresh token is now invalid."},
-            status=status.HTTP_200_OK
-        )
-        response.delete_cookie(
-            "csrftoken",
-            path="/",
-            secure=getattr(settings, "SESSION_COOKIE_SECURE", True),
-            samesite=getattr(settings, "SESSION_COOKIE_SAMESITE", "Lax"),
-            httponly=False,
-        )
-
-        return response
-
-
+            return response
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
 
 
 class RefreshTokenView(APIView):

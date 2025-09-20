@@ -6,7 +6,7 @@ class VideoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Video
-        fields = ["id", "title", "description", "created_at", "category", "video_file", "thumbnail_url"]
+        fields = ["id", "created_at", "title", "description", "thumbnail_url", "category",]
 
     def get_thumbnail_url(self, obj):
         request = self.context.get("request")
@@ -15,10 +15,4 @@ class VideoSerializer(serializers.ModelSerializer):
         return ""
 
 
-    #     fields = ['id', 'created_at', 'title', 'description', 'thumbnail_url', 'category']
-
-    # def get_thumbnail_url(self, obj):
-    #     # TODO  have thumbnails saved in media/thumbnails/<video_id>.jpg
-    #     request = self.context.get('request')
-    #     return request.build_absolute_uri(f'/media/thumbnails/{obj.id}.jpg')
 

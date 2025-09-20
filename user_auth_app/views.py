@@ -10,21 +10,20 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework import serializers, generics
-from django.core.mail import send_mail
-from django.core.mail import EmailMultiAlternatives
-from django.utils.encoding import force_bytes
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework import generics
+# from django.core.mail import send_mail
+# from django.core.mail import EmailMultiAlternatives
+# from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+# from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 from rest_framework_simplejwt.exceptions import TokenError
 from django.core.exceptions import ObjectDoesNotExist
-from rest_framework_simplejwt.authentication import JWTAuthentication
+# from rest_framework_simplejwt.authentication import JWTAuthentication
 from .serializers import RegistrationSerializer, LoginSerializer, UserSerializer
 from .utils import send_activation_email, send_password_reset_email
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
+# from django.views.decorators.csrf import csrf_exempt
+# from django.utils.decorators import method_decorator
 
 User = get_user_model()
 
@@ -87,6 +86,7 @@ def _cookie_settings():
         samesite=getattr(settings, "SESSION_COOKIE_SAMESITE", "Lax"),
     )
 
+
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -95,13 +95,16 @@ class LoginView(APIView):
         serializer.is_valid(raise_exception=True)
 
         user = serializer.validated_data["user"]
-        refresh = RefreshToken.for_user(user)
-        access = refresh.access_token
 
-        access_max_age = int(getattr(settings, "SIMPLE_JWT", {}) \
-                             .get("ACCESS_TOKEN_LIFETIME").total_seconds())
-        refresh_max_age = int(getattr(settings, "SIMPLE_JWT", {}) \
-                              .get("REFRESH_TOKEN_LIFETIME").total_seconds())
+        refresh_token, access_token = create_tokens_for_user(user)
+        access_max_age, refresh_max_age = get_jwt_max_ages()
+        # refresh = RefreshToken.for_user(user)
+        # access = refresh.access_token
+
+        # access_max_age = int(getattr(settings, "SIMPLE_JWT", {}) \
+        #                      .get("ACCESS_TOKEN_LIFETIME").total_seconds())
+        # refresh_max_age = int(getattr(settings, "SIMPLE_JWT", {}) \
+        #                       .get("REFRESH_TOKEN_LIFETIME").total_seconds())
 
         resp = Response(
             {
@@ -114,30 +117,32 @@ class LoginView(APIView):
             status=status.HTTP_200_OK,
         )
 
-        # HttpOnly cookies (frontend does not read them — browser attaches them automatically)
-        cookie_flags = _cookie_settings()
-        resp.set_cookie(
-            key="access_token",
-            value=str(access),
-            max_age=access_max_age,
-            **cookie_flags,
-        )
-        resp.set_cookie(
-            key="refresh_token",
-            value=str(refresh),
-            max_age=refresh_max_age,
-            **cookie_flags,
-        )
+        set_auth_cookies(response, request, access_token, refresh_token, access_max_age, refresh_max_age)
+
+        # # HttpOnly cookies (frontend does not read them — browser attaches them automatically)
+        # cookie_flags = _cookie_settings()
+        # resp.set_cookie(
+        #     key="access_token",
+        #     value=str(access),
+        #     max_age=access_max_age,
+        #     **cookie_flags,
+        # )
+        # resp.set_cookie(
+        #     key="refresh_token",
+        #     value=str(refresh),
+        #     max_age=refresh_max_age,
+        #     **cookie_flags,
+        # )
         
-        # ✅ Add CSRF cookie (not HttpOnly, so frontend can read it)
-        resp.set_cookie(
-            key="csrftoken",
-            value=get_token(request),
-            max_age=access_max_age,
-            secure=getattr(settings, "SESSION_COOKIE_SECURE", True),
-            samesite=getattr(settings, "SESSION_COOKIE_SAMESITE", "Lax"),
-            httponly=False,  # important: must be readable in JS
-        )
+        # # ✅ Add CSRF cookie (not HttpOnly, so frontend can read it)
+        # resp.set_cookie(
+        #     key="csrftoken",
+        #     value=get_token(request),
+        #     max_age=access_max_age,
+        #     secure=getattr(settings, "SESSION_COOKIE_SECURE", True),
+        #     samesite=getattr(settings, "SESSION_COOKIE_SAMESITE", "Lax"),
+        #     httponly=False,  # important: must be readable in JS
+        # )
 
         return resp
 
@@ -225,11 +230,11 @@ class PasswordResetView(APIView):
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            return Response({"message": "Falls ein Konto existiert, wurde ein Link geschickt."},
+            return Response({"message": "An email has been sent to reset your password."},
                             status=status.HTTP_200_OK)
 
         send_password_reset_email(user)
-        return Response({"message": "Falls ein Konto existiert, wurde ein Link geschickt."},
+        return Response({"message": "An email has been sent to reset your password."},
                         status=status.HTTP_200_OK)
 
 

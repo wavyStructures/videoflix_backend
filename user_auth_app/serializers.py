@@ -23,7 +23,6 @@ class RegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['email', 'password', 'confirmed_password']
-        # fields = ['username', 'email', 'password', 'confirmed_password']
         extra_kwargs = {
             'password': {
                 'write_only': True

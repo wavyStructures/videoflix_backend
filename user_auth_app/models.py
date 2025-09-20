@@ -3,7 +3,7 @@ from django.db import models
 
 
 class CustomUserManager(BaseUserManager):
-    """Manager for 'CustomUser', authentification with email"""
+    """Manager for 'CustomUser', authentication with email"""
     
     def create_user(self, email, password=None, **extra_fields):
         if not email:

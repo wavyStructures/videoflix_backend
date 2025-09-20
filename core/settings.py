@@ -209,6 +209,9 @@ BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
 # EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 # EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
+if DEBUG:
+    EMAIL_BACKEND = "user_auth_app.urls.CaptureEmailBackend"
+
 EMAIL_BACKEND = os.getenv(
     "DJANGO_EMAIL_BACKEND",
     "django.core.mail.backends.smtp.EmailBackend"  # fallback for production

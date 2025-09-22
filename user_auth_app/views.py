@@ -233,7 +233,6 @@ class PasswordConfirmView(APIView):
             return Response({"error": "Ungültiger Link."},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        # Token prüfen
         if not default_token_generator.check_token(user, token):
             return Response({"error": "Ungültiger oder abgelaufener Token."},
                             status=status.HTTP_400_BAD_REQUEST)

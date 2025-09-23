@@ -66,46 +66,6 @@ def auto_delete_file_on_delete(sender, instance, **kwargs):
         hls_dir.rmdir()
 
 
-
-
-
-        # master_path = convert_to_hls(
-        #     source_path=instance.video_file.path,
-        #     video_id=instance.id,
-        #     make_trailer=True,
-        #     make_thumbnail=True,
-        # )
-
-        # try:
-        #     if master_path and os.path.exists(master_path):
-        #         instance.hls_master.name = os.path.relpath(master_path, settings.MEDIA_ROOT)
-        # except Exception as e:
-        #     print(f"Error setting hls_master: {e}")
-
-
-        # trailer_path = os.path.join(settings.MEDIA_ROOT, "hls", str(instance.id), "trailer.mp4")
-        # thumb_path = os.path.join(settings.MEDIA_ROOT, "hls", str(instance.id), "thumbnail.jpg")
-
-        # if os.path.exists(trailer_path):
-        #     instance.trailer.name = os.path.relpath(trailer_path, settings.MEDIA_ROOT)
-        # if os.path.exists(thumb_path):
-        #     instance.thumbnail.name = os.path.relpath(thumb_path, settings.MEDIA_ROOT)
-
-        # instance.save(update_fields=["hls_master", "trailer", "thumbnail"])
-    
-
-# @receiver(post_delete, sender=Video)
-# def auto_delete_file_on_delete(sender, instance, **kwargs):
-#     """
-#     Deletes file from filesystem
-#     when corresponding `Video` object is deleted.
-#     """
-#     if instance.video_file and instance.video_file.name:
-#         if os.path.isfile(instance.video_file.path):
-#             os.remove(instance.video_file.path)
-            
-            
-            
-            
+        
     
             

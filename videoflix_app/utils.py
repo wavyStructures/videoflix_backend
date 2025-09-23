@@ -25,3 +25,5 @@ def validate_segment_name(segment: str) -> str:
         raise Http404("Invalid segment name")
     return segment
 
+
+

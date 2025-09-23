@@ -2,8 +2,6 @@ import os
 import subprocess
 from pathlib import Path
 from django.conf import settings
-# from django.db import transaction
-# from django.core.cache import cache
 from .models import Video
 
 
@@ -52,9 +50,6 @@ def _build_renditions(source: Path, output_dir: Path) -> list[tuple[Path, str, s
         scale = rendition["scale"]
         bitrate = rendition["bitrate"]
 
-        # width, height = scale.split(":")
-        # segment_template = (stream_dir / "%d.ts").as_posix()
-
         command = [
             FFMPEG_BIN,
             "-i", source.as_posix(),
@@ -73,7 +68,8 @@ def _build_renditions(source: Path, output_dir: Path) -> list[tuple[Path, str, s
 
 
 def _write_master_playlist(output: Path, variant_playlists: list[tuple [Path, str, str]]):
-    
+    """Write the master.m3u8 playlist pointing to all renditions."""
+
     master_path = output_dir / "master.m3u8"
     with master_path.open("w", encoding="utf-8") as m3u8:
         m3u8.write("#EXTM3U\n")
@@ -106,26 +102,19 @@ def _generate_trailer(source: Path, output_dir: Path):
 def _generate_thumbnail(source: Path, output_dir: Path):
     """Generate a thumbnail from 1s into the video."""
 
-
     thumb_path = output_dir / "thumbnail.jpg"
-    if make_thumbnail:
-        subprocess.run([
-            FFMPEG_BIN, "-y",
+    _run_ffmpeg([
+        FFMPEG_BIN, "-y",
             "-ss", "00:00:01",
             "-i", source.as_posix(),
             "-frames:v", "1",
             thumb_path.as_posix()
-        ], check=True)
-
-
-
-
+    ])
 
 
 def convert_to_hls(source_path: str, video_id: int, make_trailer: bool = True, make_thumbnail: bool = True) -> str:
-    """
-    Convert a video file to HLS (.m3u8 + segments)
-    """
+    """Convert a video file to HLS (.m3u8 + segments). Returns the path to the master playlist."""
+
     source = Path(source_path)
     if not source.exists():
         raise RuntimeError(f"File {source} does not exist")
@@ -135,33 +124,38 @@ def convert_to_hls(source_path: str, video_id: int, make_trailer: bool = True, m
     output_dir = Path(settings.MEDIA_ROOT) / "hls" / str(video_id)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    variant_playlists: list[tuple[Path, str, str]] = []
+    variant_playlists = _build_renditions(source, output_dir)
 
+    mster_path = _write_master_playlist(output_dir, variant_playlists)
 
+    if make_trailer:
+        _generate_trailer(source, output_dir)
+    if make_thumbnail:
+        _generate_thumbnail(source, output_dir)
 
-
-
-
-    # return master_path.as_posix()
+    
     try:
         video = Video.objects.get(pk=video_id)
-        video.trailer = f"hls/{video_id}/480p/index.m3u8"
-        video.save()
+        video.hls_master = _rel_to_media(master_path)
+        if make_trailer:
+            video.trailer = f"hls/{video_id}/480p/index.m3u8"            
+        if make_thumbnail: 
+            video.thumbnail = f"hls/{video_id}/thumbnail.jpg"
+        video.save(update_fields=["hls_master", "trailer", "thumbnail"])
     except Video.DoesNotExist:
         pass
 
+    return master_path.as_posix()
 
 
 def generate_thumbnail(input_file, output_file, time="00:00:01"):
-    """
-    Grab a frame from the video as a thumbnail
-    """
-    command = [
-        "ffmpeg",
+    """Grab a frame from the video as a thumbnail."""
+
+    _run_ffmpeg = ([
+        FFMPEG_BIN,
         "-i", input_file,
         "-ss", time,           
         "-vframes", "1",
         output_file
-    ]
-    subprocess.run(command, check=True)
+    ])
     return output_file

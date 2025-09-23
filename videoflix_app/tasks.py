@@ -56,7 +56,6 @@ def _build_renditions(source: Path, output_dir: Path) -> list[tuple[Path, str, s
             "-vf", f"scale=w={width}:h={height}:force_original_aspect_ratio=decrease,"
                    f"pad=w=ceil(iw/2)*2:h=ceil(ih/2)*2",
             "-b:v", bitrate,
-            # "-hls_time", "4",
             "-hls_time", str(HLS_SEG_DUR),
             "-hls_list_size", "0",
             "-f", "hls",

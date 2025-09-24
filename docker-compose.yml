@@ -37,6 +37,7 @@ services:
       - ./backend.entrypoint.sh:/app/backend.entrypoint.sh
       - ./media:/app/media
       - videoflix_static:/app/static
+      - ./htmlcov:/app/htmlcov 
     ports:
       - "8000:8000"
     depends_on:

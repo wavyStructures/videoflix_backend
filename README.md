@@ -50,80 +50,7 @@ It is containerized with **Docker**, using **PostgreSQL** as the database and **
 git clone https://github.com/your-username/videoflix_backend.git
 cd videoflix_backend
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-OLD:
-
-
-Videoflix Backend
-
-
-
-
-
-
-
-
-
-
-
-
-A Django REST Framework backend for Videoflix, a video streaming platform.
-This project provides authentication, user profiles, and protected video streaming endpoints (HLS .m3u8 manifests and .ts chunks).
-It is containerized with Docker, using PostgreSQL as the database and Redis as a cache/message broker.
-
-🚀 Features
-
-Authentication: User signup & login (token/JWT support)
-
-Profiles: Basic profile management for registered users
-
-Video Streaming: HLS playlist (.m3u8) + video chunk (.ts) endpoints
-
-Access Control: Configurable (public or authenticated)
-
-Dockerized: Run with one command (docker-compose up)
-
-Redis: Ready for caching / async tasks (e.g. Celery integration)
-
-🛠️ Tech Stack
-
-Backend: Django 5 + Django REST Framework
-
-Database: PostgreSQL
-
-Cache / Broker: Redis
-
-Media Handling: HLS (.m3u8, .ts)
-
-Containerization: Docker & Docker Compose
-
-Testing: Pytest + DRF test utilities
-
-📦 Installation & Setup
-Prerequisites
-
-Docker
-
-Docker Compose
-
-Clone the repo
-git clone https://github.com/your-username/videoflix_backend.git
-cd videoflix_backend
-
-Environment variables
+🔹 Environment Variables
 
 Create a .env file in the project root:
 
@@ -137,41 +64,39 @@ POSTGRES_PORT=5432
 REDIS_HOST=redis
 REDIS_PORT=6379
 
-Run with Docker
+🔹 Run with Docker
 docker-compose up --build
 
 
-This will start:
+This starts:
 
-Backend → http://localhost:8000
+📡 Backend → http://localhost:8000
 
-PostgreSQL → on internal Docker network
+🗄️ PostgreSQL → internal Docker network
 
-Redis → on internal Docker network
+⚡ Redis → internal Docker network
 
-📡 API Endpoints (examples)
+📡 API Endpoints (Examples)
 
-Authentication:
+🔑 Authentication
 
-POST /api/registration/   # Register
-POST /api/login/          # Login
+POST /api/registration/ → Register
 
+POST /api/login/ → Login
 
-Profile:
+👤 Profile
 
 GET /api/profile/{id}/
 
+🎥 Videos
 
-Videos:
+GET /api/video/{id}/{quality}/index.m3u8 → HLS playlist
 
-GET /api/video/{id}/{quality}/index.m3u8   # HLS playlist
-GET /api/video/{id}/{quality}/{chunk}.ts   # Video chunks
+GET /api/video/{id}/{quality}/{chunk}.ts → Video chunks
 
 🎥 Frontend Integration
 
-The backend serves HLS streams that can be played in the browser with a plain HTML/JS player.
-Example using hls.js
-:
+HLS streams can be played in-browser using hls.js:
 
 <video id="video" controls></video>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -182,38 +107,20 @@ Example using hls.js
   hls.attachMedia(video);
 </script>
 
-✅ Development Checklist
-
- API endpoints reachable
-
- Authentication working (token/JWT)
-
- HLS manifests served with correct headers (application/vnd.apple.mpegurl)
-
- TS chunks served with correct headers (video/mp2t)
-
- Range requests supported (206 Partial Content)
-
- Dockerized setup with PostgreSQL + Redis
-
 🧪 Running Tests
 
 Run tests inside the backend container:
 
 docker-compose run backend pytest
 
-📖 Notes
+📖 Notes for Production
 
-For production, configure:
+🌐 Nginx → Serve static/videos efficiently (X-Accel-Redirect recommended)
 
-Nginx for efficient static/video serving (X-Accel-Redirect recommended)
+⚙️ CORS → Use django-cors-headers
 
-Proper CORS settings (django-cors-headers)
-
-Signed URLs or pre-signed tokens for secure video access
+🔑 Video Security → Signed URLs or pre-signed tokens
 
 📜 License
 
-MIT License – feel free to use and adapt.
-
-👉 D
+MIT License – free to use and adapt.

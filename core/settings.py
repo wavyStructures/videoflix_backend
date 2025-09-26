@@ -192,8 +192,6 @@ MEDIA_URL = '/media/'
 # MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_ROOT = BASE_DIR / "media"
 
-DEBUG = True
-
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
@@ -206,16 +204,12 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5501")
 BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
 
 # Email settings
-# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-
-if DEBUG:
-    EMAIL_BACKEND = "user_auth_app.urls.CaptureEmailBackend"
-
-EMAIL_BACKEND = os.getenv(
-    "DJANGO_EMAIL_BACKEND",
-    "django.core.mail.backends.smtp.EmailBackend"  # fallback for production
+EMAIL_BACKEND = (
+    os.getenv("DJANGO_EMAIL_BACKEND")
+    if os.getenv("DJANGO_EMAIL_BACKEND")
+    else ("user_auth_app.urls.CaptureEmailBackend" if DEBUG else "django.core.mail.backends.smtp.EmailBackend")
 )
+
 
 EMAIL_HOST = os.getenv("EMAIL_HOST", "mail.gmx.net")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
@@ -241,12 +235,6 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
-
-
-try:
-    from .settings_local import *
-except ImportError:
-    pass
 
 
 

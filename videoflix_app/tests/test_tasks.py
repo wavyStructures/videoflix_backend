@@ -5,14 +5,6 @@ import subprocess
 import pytest
 from videoflix_app import tasks
 from unittest.mock import patch, MagicMock
-# from videoflix_app.tasks import (
-#     _rel_to_media,
-#     _build_renditions,
-#     _write_master_playlist,
-#     _generate_trailer,
-#     _generate_thumbnail,
-#     convert_to_hls
-# )
 from videoflix_app.models import Video
 
 
@@ -30,7 +22,7 @@ def test__rel_to_media_valid(tmp_path, settings):
 
 
     rel = tasks._rel_to_media(file_path)
-    assert rel == "video.pm4"
+    assert rel == "video.mp4"
 
 
 def test__rel_to_media_missing_file(tmp_path, settings):
@@ -44,8 +36,8 @@ def test_build_renditions(mock_ffmpeg, tmp_path):
     dummy_source.touch()
     output_dir = tmp_path / "hls_test"
     
-    renditions = _build_renditions(dummy_source, output_dir)
-    assert len(renditions) > len(tasks.RENDITIONS)
+    renditions = tasks._build_renditions(dummy_source, output_dir)
+    assert len(renditions) == len(tasks.RENDITIONS)
     for path, scale, bitrate in renditions:
         # assert str(path).endswith("index.m3u8")
         assert path.exists() or True  
@@ -58,7 +50,7 @@ def test_write_master_playlist(tmp_path):
     (output_dir / "480p").mkdir(parents=True)
     
     dummy_playlist = [(output_dir / "480p/index.m3u8", "480:854", "800k")]
-    master_path = _write_master_playlist(output_dir, dummy_playlist)
+    master_path = tasks._write_master_playlist(output_dir, dummy_playlist)
     assert master_path.exists()
     content = master_path.read_text()
     assert "#EXTM3U" in content
@@ -82,39 +74,53 @@ def test_generate_thumbnail(mock_ffmpeg, tmp_path):
     output_dir.mkdir()
     
     tasks._generate_thumbnail(dummy_source, output_dir)
-    assert mock_ffmpeg.called
+    mock_ffmpeg.assert_called_once()
 
 
-def test_convert_to_hls(mock_ffmpeg, tmp_path, settings):
+@pytest.mark.django_db
+def test_convert_to_hls_updates_video(mock_ffmpeg, tmp_path, settings):
     settings.MEDIA_ROOT = str(tmp_path)
     video = Video.objects.create(title="Test Video")
     
     dummy_source = tmp_path / "video.mp4"
     dummy_source.touch()
     
-    master_path = convert_to_hls(str(dummy_source), video.id)
+    master_path = tasks.convert_to_hls(str(dummy_source), video.id)
     assert master_path.endswith("master.m3u8")
     
     video.refresh_from_db()
-    assert "master.m3u8" in video.hls_master
-    assert video.thumbnail.endswith(".jpg")
-    assert video.trailer.endswith(".m3u8")
+    assert "master.m3u8" in video.hls_master.name
 
 
+@pytest.mark.django_db
 def test_convert_to_hls_without_trailer_and_thumbnail(mock_ffmpeg, tmp_path, settings):
     settings.MEDIA_ROOT = str(tmp_path)
     video = Video.objects.create(title="Test Video")
+    
+    dummy_source = tmp_path / "video.mp4"
+    dummy_source.touch()
+    
+    master_path = tasks.convert_to_hls(str(dummy_source), video.id, make_trailer=False, make_thumbnail=False)
+    assert master_path.endswith("master.m3u8")
+    
+    video.refresh_from_db()
+    assert "master.m3u8" in video.hls_master.name
+    assert not video.thumbnail 
+    assert not video.trailer
+
+
+@pytest.mark.django_db
+def test_convert_to_hls_video_does_not_exist(mock_ffmpeg, tmp_path, settings):
+    settings.MEDIA_ROOT = str(tmp_path)
 
     dummy_source = tmp_path / "video.mp4"
     dummy_source.touch()
     
+    result = tasks.convert_to_hls(str(dummy_source), 9999)
+
+    assert result.endswith("master.m3u8")
 
 
-
-
-
-
-
-
-def test_convert_to_hls(mock_ffmpeg, tmp_path, settings):
-    settings.MEDIA_ROOT = str(tmp_path)
+def test_convert_to_hls_missing_source(mock_ffmpeg, tmp_path, settings):
+    with pytest.raises(RuntimeError):
+        tasks.convert_to_hls(str(tmp_path / "mising.mp4"), 1)

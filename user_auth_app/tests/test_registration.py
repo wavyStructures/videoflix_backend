@@ -1,6 +1,5 @@
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from rest_framework.test import APITestCase
 import pytest
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
@@ -35,7 +34,7 @@ def test_activate_user(client):
     token = default_token_generator.make_token(user)
     url = reverse("activate", args=[uidb64, token])
 
-    response = self.client.get(url)
+    response = client.get(url)
 
     assert response.status_code == 200
     assert response.data["message"] == "Account successfully activated."
@@ -78,30 +77,33 @@ def test_logout_user(client):
     assert "refresh" not in response.cookies or response.cookies["refresh"].value == ""
     
 
-
-def test_token_refresh(self):
+@pytest.mark.django_db
+def test_token_refresh(client):
     user = User.objects.create_user(
         email="refreshuser@example.com", password="securepassword", is_active=True
     )
     login_url = reverse("login")
-    self.client.post(login_url, {"email": user.email, "password": "securepassword"})
+    client.post(login_url, {"email": user.email, "password": "securepassword"})
+
     refresh_url = reverse("token_refresh")
-    response = self.client.post(refresh_url)
-    self.assertEqual(response.status_code, 200)
-    self.assertEqual(response.data["detail"], "Token refreshed")
-    self.assertIn("access", response.data)
-    self.assertIn("access_token", response.cookies)
+    response = client.post(refresh_url)
+
+    assert response.status_code == 200
+    assert response.data["detail"] == "Token refreshed"
+    assert "access" in response.data
+    assert "access_token" in response.cookies
 
 
-
-def test_password_reset_flow(self):
+@pytest.mark.django_db
+def test_password_reset_flow(client):
     user = User.objects.create_user(
         email="resetuser@example.com", password="oldpassword", is_active=True
     )
     reset_url = reverse("password_reset")
-    response = self.client.post(reset_url, {"email": user.email})
-    self.assertEqual(response.status_code, 200)
-    self.assertTrue(response.data["message"].startswith("An email has been sent"))
+    response = client.post(reset_url, {"email": user.email})
+
+    assert response.status_code == 200
+    assert response.data["message"].startswith("An email has been sent")
 
 
     uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
@@ -112,12 +114,11 @@ def test_password_reset_flow(self):
         "new_password": "newsecurepassword",
         "confirm_password": "newsecurepassword"
     }
-    response = self.client.post(confirm_url, new_password_data)
+    response = client.post(confirm_url, new_password_data)
     
-    self.assertEqual(response.status_code, 200)
-    self.assertEqual(response.data["message"], "Passwort wurde erfolgreich geändert.")
-
+    assert response.status_code == 200
+    assert response.data["message"], "Passwort wurde erfolgreich geändert."
     
     user.refresh_from_db()
-    self.assertTrue(user.check_password("newsecurepassword"))
+    assert user.check_password("newsecurepassword")
 

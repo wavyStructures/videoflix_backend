@@ -222,10 +222,15 @@ class PasswordConfirmView(APIView):
 
     def post(self, request, uidb64, token):
         new_password = request.data.get("new_password")
+        confirm_password = request.data.get("confirm_password")
+
         if not new_password:
             return Response({"error": "Neues Passwort erforderlich."},
                             status=status.HTTP_400_BAD_REQUEST)
 
+        if new_password != confirm_password:
+            return Response({"error": "Passwörter stimmen nicht überein."},
+                            status=status.HTTP_400_BAD_REQUEST)
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
             user = User.objects.get(pk=uid)

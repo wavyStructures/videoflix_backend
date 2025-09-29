@@ -102,7 +102,6 @@ def set_auth_cookies(response, request, access_token, refresh_token, access_max_
         **flags,
     )
 
-    # CSRF cookie must be readable by JS (httponly=False)
     response.set_cookie(
         key="csrftoken",
         value=get_token(request),

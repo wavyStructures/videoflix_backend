@@ -1,18 +1,17 @@
-# import os
 from django.http import FileResponse, Http404
-# from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
-# from rest_framework.response import Response
-# from rest_framework import status
-
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from .models import Video
 from .serializers import VideoSerializer
 from .utils import safe_media_path, validate_segment_name
 
 
 class VideoListView(ListAPIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    
     queryset = Video.objects.all().order_by("-created_at")
     serializer_class = VideoSerializer
 

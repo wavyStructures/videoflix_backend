@@ -283,4 +283,66 @@ def test_convert_to_hls_missing_source(mock_ffmpeg, tmp_path, settings):
         tasks.convert_to_hls(str(tmp_path / "mising.mp4"), 1)
 
 
+@pytest.mark.django_db
+def test_video_post_save_creates_hls_and_updates_fields(tmp_path, settings):
+    settings.MEDIA_ROOT = str(tmp_path)
 
+    video_file = tmp_path / "source.mp4"
+    video_file.write_bytes(b"dummy")
+
+    video = Video.objects.create(title="With file", video_file=str(video_file))
+
+    hls_dir = tmp_path / "hls" / str(video.id)
+    hls_dir.mkdir(parents=True, exist_ok=True)
+    master_path = hls_dir / "master.m3u8"
+    master_path.write_text("#EXTM3U")
+    (hls_dir / "480p").mkdir()
+    (hls_dir / "480p/index.m3u8").write_text("#EXTM3U")
+    (hls_dir / "thumbnail.jpg").write_bytes(b"img")
+
+    with patch("videoflix_app.signals.convert_to_hls", return_value=str(master_path)):
+        video.save()  
+
+    video.refresh_from_db()
+    assert video.hls_master.name.endswith("master.m3u8")
+    assert video.trailer.name.endswith("480p/index.m3u8")
+    assert video.thumbnail.name.endswith("thumbnail.jpg")
+
+
+@pytest.mark.django_db
+def test_video_post_save_handles_exception(tmp_path, settings, capsys):
+    settings.MEDIA_ROOT = str(tmp_path)
+
+    video_file = tmp_path / "broken.mp4"
+    video_file.write_bytes(b"dummy")
+
+    video = Video.objects.create(title="Broken", video_file=str(video_file))
+
+    with patch("videoflix_app.signals.convert_to_hls", side_effect=Exception("boom")):
+        video.save() 
+
+    captured = capsys.readouterr()
+    assert "Error running HLS conversion" in captured.out
+
+
+@pytest.mark.django_db
+def test_auto_delete_file_on_delete_removes_video_and_hls_dir(tmp_path, settings):
+    settings.MEDIA_ROOT = str(tmp_path)
+
+    video_file = tmp_path / "todelete.mp4"
+    video_file.write_bytes(b"dummy")
+
+    video = Video.objects.create(title="ToDelete", video_file=str(video_file))
+
+    hls_dir = tmp_path / "hls" / str(video.id)
+    subdir = hls_dir / "720p"
+    subdir.mkdir(parents=True)
+    (subdir / "index.m3u8").write_text("#EXTM3U")
+
+    assert video_file.exists()
+    assert hls_dir.exists()
+
+    video.delete()
+
+    assert not video_file.exists()
+    assert not hls_dir.exists()

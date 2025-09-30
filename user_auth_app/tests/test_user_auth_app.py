@@ -4,8 +4,9 @@ import pytest
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
-from user_auth_app.serializers import LoginSerializer
 from rest_framework.test import APIClient
+from unittest.mock import patch
+from user_auth_app.serializers import LoginSerializer
 
 User = get_user_model()
 
@@ -134,7 +135,7 @@ def test_password_reset_flow(client):
 @pytest.mark.django_db
 def test_password_reset_missing_email():
     client = APIClient()
-    response = client.post("/api/password-reset/", data={})  
+    response = client.post("/api/password_reset/", data={})  
 
     assert response.status_code == 400
     assert response.json()["error"] == "E-Mail-Adresse erforderlich."
@@ -213,13 +214,13 @@ def test_login_serializer_inactive_user():
         is_active=False,
     )
 
-    serializer = LoginSerializer(data={
-        "email": "inactive@example.com",
-        "password": "testpass123"
-    })
+    data = {"email": "inactive@example.com", "password": "testpass123"}
 
-    assert not serializer.is_valid()
-    assert "Account is inactive" in str(serializer.errors)
+    with patch("user_auth_app.serializers.authenticate") as mock_auth:
+        mock_auth.return_value = user
+        serializer = LoginSerializer(data=data)
+        assert not serializer.is_valid()
+        assert "Account is inactive" in str(serializer.errors)
 
 
 @pytest.mark.django_db
@@ -246,10 +247,8 @@ def test_logout_raises_exception(monkeypatch):
     client = APIClient()
     client.force_authenticate(user=user)
 
-    # Set a dummy refresh_token cookie
     client.cookies['refresh_token'] = "dummy-token"
 
-    # Mock RefreshToken to raise an exception
     with patch("user_auth_app.views.RefreshToken") as mock_token:
         mock_token.side_effect = Exception("Mocked exception")
 
@@ -306,9 +305,9 @@ def test_token_refresh_invalid_cookie(client):
 
 
 @pytest.mark.django_db
-def test_authentication_fails_with_invalid_token(api_client):
-    api_client.credentials(HTTP_AUTHORIZATION="Bearer invalid.token")
-    response = api_client.get("/api/protected-endpoint/")
+def test_authentication_fails_with_invalid_token(client):
+    client.credentials(HTTP_AUTHORIZATION="Bearer invalid.token")
+    response = client.get("/api/video/")
     assert response.status_code == 401
 
 
@@ -320,7 +319,7 @@ def test_cookie_jwt_auth_invalid_cookie(client):
 
 
 @pytest.mark.django_db
-def test_activate_view_invalid_token_but_valid_uid(api_client):
+def test_activate_view_invalid_token_but_valid_uid(client):
     user = User.objects.create_user(
         email="user@example.com",
         password="pass1234",
@@ -331,7 +330,7 @@ def test_activate_view_invalid_token_but_valid_uid(api_client):
     invalid_token = "invalid-token"
 
     url = f"/api/activate/{uidb64}/{invalid_token}/"
-    response = api_client.get(url)
+    response = client.get(url)
 
     assert response.status_code == 400
     assert response.json()["message"] == "Activation failed."
@@ -341,7 +340,6 @@ def test_activate_view_invalid_token_but_valid_uid(api_client):
 
 @pytest.mark.django_db
 def test_activate_view_invalid_uid(client):
-    # invalid uid but valid token format
     user = User.objects.create_user(email="activefail@example.com", password="pw")
     token = default_token_generator.make_token(user)
     response = client.get(reverse("activate", args=["invaliduid", token]))

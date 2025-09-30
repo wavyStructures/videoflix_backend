@@ -4,8 +4,15 @@ import pytest
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
+from user_auth_app.serializers import LoginSerializer
+from rest_framework.test import APIClient
 
 User = get_user_model()
+
+
+@pytest.fixture
+def client():
+    return APIClient()
 
 
 @pytest.mark.django_db
@@ -57,7 +64,24 @@ def test_register_user_password_mismatch(client):
     response = client.post(url, data, format="json")
 
     assert response.status_code == 400
-    assert "Passwords do not match" in str(response.data)
+    assert "Passwörter stimmen nicht überein" in str(response.data)
+
+
+@pytest.mark.django_db
+def test_create_user_without_email_raises_value_error():
+    with pytest.raises(ValueError, match="The Email field must be set"):
+        User.objects.create_user(email=None, password="pass1234")
+
+
+@pytest.mark.django_db
+def test_create_superuser_sets_correct_flags():
+    user = User.objects.create_superuser(
+        email="admin@example.com",
+        password="superpass"
+    )
+    assert user.is_staff is True
+    assert user.is_superuser is True
+    assert user.is_active is True
 
 
 @pytest.mark.django_db
@@ -108,6 +132,15 @@ def test_password_reset_flow(client):
 
 
 @pytest.mark.django_db
+def test_password_reset_missing_email():
+    client = APIClient()
+    response = client.post("/api/password-reset/", data={})  
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "E-Mail-Adresse erforderlich."
+
+
+@pytest.mark.django_db
 def test_password_reset_non_existing_email(client):
     response = client.post('/api/password_reset/', {"email": "no@user.com"})
     assert response.status_code == 200  
@@ -123,8 +156,8 @@ def test_password_reset_passwords_do_not_match(client):
     data = {"new_password": "newpw", "confirm_password": "differentpw"}
     response = client.post(confirm_url, data)
 
-    assert response.status_code == 200
-    assert "Passwords do not match" in str(response.data)
+    assert response.status_code == 400
+    assert "Passwörter stimmen nicht überein." in str(response.data)
 
 
 @pytest.mark.django_db
@@ -161,7 +194,7 @@ def test_login_user_wrong_password(client):
     url = reverse("login")
     response = client.post(url, {"email": user.email, "password": "wrongpw"})
     assert response.status_code == 400
-    assert "Invalid credentials" in str(response.data) or "ungültig" in str(response.data)
+    assert "Invalid email or password" in str(response.data) or "ungültig" in str(response.data)
 
 
 @pytest.mark.django_db
@@ -169,7 +202,24 @@ def test_login_user_non_existing(client):
     url = reverse("login")
     response = client.post(url, {"email": "notfound@example.com", "password": "pw"})
     assert response.status_code == 400
-    assert "Invalid credentials" in str(response.data) or "ungültig" in str(response.data)
+    assert "Invalid email or password" in str(response.data) or "ungültig" in str(response.data)
+
+
+@pytest.mark.django_db
+def test_login_serializer_inactive_user():
+    user = User.objects.create_user(
+        email="inactive@example.com",
+        password="testpass123",
+        is_active=False,
+    )
+
+    serializer = LoginSerializer(data={
+        "email": "inactive@example.com",
+        "password": "testpass123"
+    })
+
+    assert not serializer.is_valid()
+    assert "Account is inactive" in str(serializer.errors)
 
 
 @pytest.mark.django_db
@@ -188,7 +238,38 @@ def test_logout_user(client):
     assert "access" not in response.cookies or response.cookies["access"].value == ""
     
     assert "refresh" not in response.cookies or response.cookies["refresh"].value == ""
-    
+
+
+@pytest.mark.django_db
+def test_logout_raises_exception(monkeypatch):
+    user = User.objects.create_user(email="user@example.com", password="pass1234")
+    client = APIClient()
+    client.force_authenticate(user=user)
+
+    # Set a dummy refresh_token cookie
+    client.cookies['refresh_token'] = "dummy-token"
+
+    # Mock RefreshToken to raise an exception
+    with patch("user_auth_app.views.RefreshToken") as mock_token:
+        mock_token.side_effect = Exception("Mocked exception")
+
+        response = client.post("/api/logout/")
+
+    assert response.status_code == 500
+    assert "Mocked exception" in response.json()["error"]
+
+
+@pytest.mark.django_db
+def test_logout_missing_refresh_token():
+    user = User.objects.create_user(email="user@example.com", password="pass1234")
+    client = APIClient()
+    client.force_authenticate(user=user)
+
+    response = client.post("/api/logout/")
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Refresh token missing."
+
 
 @pytest.mark.django_db
 def test_token_refresh(client):
@@ -212,7 +293,7 @@ def test_token_refresh_without_cookie(client):
     url = reverse("token_refresh")
     response = client.post(url)
     assert response.status_code == 400
-    assert "No refresh token" in str(response.data) or "Token" in str(response.data)
+    assert "Refresh token missing" in str(response.data) 
 
 
 @pytest.mark.django_db
@@ -225,6 +306,13 @@ def test_token_refresh_invalid_cookie(client):
 
 
 @pytest.mark.django_db
+def test_authentication_fails_with_invalid_token(api_client):
+    api_client.credentials(HTTP_AUTHORIZATION="Bearer invalid.token")
+    response = api_client.get("/api/protected-endpoint/")
+    assert response.status_code == 401
+
+
+@pytest.mark.django_db
 def test_cookie_jwt_auth_invalid_cookie(client):
     client.cookies['access_token'] = 'invalid'
     response = client.get('/api/video/')
@@ -232,9 +320,23 @@ def test_cookie_jwt_auth_invalid_cookie(client):
 
 
 @pytest.mark.django_db
-def test_activate_view_invalid_token(client):
-    response = client.get('/api/activate/invalid/invalid/')
+def test_activate_view_invalid_token_but_valid_uid(api_client):
+    user = User.objects.create_user(
+        email="user@example.com",
+        password="pass1234",
+        is_active=False
+    )
+    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+
+    invalid_token = "invalid-token"
+
+    url = f"/api/activate/{uidb64}/{invalid_token}/"
+    response = api_client.get(url)
+
     assert response.status_code == 400
+    assert response.json()["message"] == "Activation failed."
+    user.refresh_from_db()
+    assert not user.is_active
 
 
 @pytest.mark.django_db

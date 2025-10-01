@@ -295,8 +295,8 @@ def test_video_post_save_creates_hls_and_updates_fields(tmp_path, settings):
     hls_dir = tmp_path / "hls" / str(video.id)
     hls_dir.mkdir(parents=True, exist_ok=True)
     master_path = hls_dir / "master.m3u8"
-    master_path.write_text("#EXTM3U")
-    (hls_dir / "480p").mkdir()
+    master_path.write_text("#EXTM3U")   
+    (hls_dir / "480p").mkdir(parents=True, exist_ok=True)
     (hls_dir / "480p/index.m3u8").write_text("#EXTM3U")
     (hls_dir / "thumbnail.jpg").write_bytes(b"img")
 

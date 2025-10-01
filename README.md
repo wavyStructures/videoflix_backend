@@ -50,54 +50,67 @@ It is containerized with **Docker**, using **PostgreSQL** as the database and **
 git clone https://github.com/your-username/videoflix_backend.git
 cd videoflix_backend
 
-🔹 Environment Variables
+---
 
-Create a .env file in the project root:
+## 🔹 Environment Variables  
 
-DJANGO_SECRET_KEY=your-secret-key
-DEBUG=True
-POSTGRES_DB=videoflix
-POSTGRES_USER=videoflix_user
-POSTGRES_PASSWORD=videoflix_password
-POSTGRES_HOST=db
-POSTGRES_PORT=5432
-REDIS_HOST=redis
-REDIS_PORT=6379
+<details>
+  <summary>Click to view required <code>.env</code> configuration</summary>
 
-🔹 Run with Docker
+  Create a `.env` file in the project root with the following values:  
+
+  ```env
+  DJANGO_SECRET_KEY=your-secret-key
+  DEBUG=True
+
+  POSTGRES_DB=videoflix
+  POSTGRES_USER=videoflix_user
+  POSTGRES_PASSWORD=videoflix_password
+  POSTGRES_HOST=db
+  POSTGRES_PORT=5432
+
+  REDIS_HOST=redis
+  REDIS_PORT=6379
+
+
+---
+
+## 🔹 Run with Docker  
+
+Start the project with:  
+
+```bash
 docker-compose up --build
 
 
 This starts:
 
-📡 Backend → http://localhost:8000
+📡 **Backend** → [http://localhost:8000](http://localhost:8000)  
+🗄️ **PostgreSQL** → internal Docker network  
+⚡ **Redis** → internal Docker network  
 
-🗄️ PostgreSQL → internal Docker network
+---
 
-⚡ Redis → internal Docker network
+## 📡 API Endpoints (Examples)
 
-📡 API Endpoints (Examples)
+### 🔑 Authentication  
+- `POST /api/registration/` → Register  
+- `POST /api/login/` → Login  
 
-🔑 Authentication
+### 👤 Profile  
+- `GET /api/profile/{id}/`  
 
-POST /api/registration/ → Register
+### 🎥 Videos  
+- `GET /api/video/{id}/{quality}/index.m3u8` → HLS playlist  
+- `GET /api/video/{id}/{quality}/{chunk}.ts` → Video chunks  
 
-POST /api/login/ → Login
+---
 
-👤 Profile
+## 🎥 Frontend Integration
 
-GET /api/profile/{id}/
+HLS streams can be played in-browser using [hls.js](https://github.com/video-dev/hls.js):  
 
-🎥 Videos
-
-GET /api/video/{id}/{quality}/index.m3u8 → HLS playlist
-
-GET /api/video/{id}/{quality}/{chunk}.ts → Video chunks
-
-🎥 Frontend Integration
-
-HLS streams can be played in-browser using hls.js:
-
+```html
 <video id="video" controls></video>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script>
@@ -107,20 +120,24 @@ HLS streams can be played in-browser using hls.js:
   hls.attachMedia(video);
 </script>
 
-🧪 Running Tests
 
-Run tests inside the backend container:
+## 🧪 Running Tests  
 
+Run tests inside the backend container:  
+
+```bash
 docker-compose run backend pytest
 
-📖 Notes for Production
 
-🌐 Nginx → Serve static/videos efficiently (X-Accel-Redirect recommended)
+## 📖 Notes for Production  
 
-⚙️ CORS → Use django-cors-headers
+- 🌐 **Nginx** → Serve static/videos efficiently (`X-Accel-Redirect` recommended)  
+- ⚙️ **CORS** → Use [django-cors-headers](https://github.com/adamchainz/django-cors-headers)  
+- 🔑 **Video Security** → Signed URLs or pre-signed tokens  
 
-🔑 Video Security → Signed URLs or pre-signed tokens
+---
 
-📜 License
+## 📜 License  
 
-MIT License – free to use and adapt.
+**MIT License** – free to use and adapt.  
+

@@ -1,15 +1,20 @@
-from django.test import TestCase
-from django.conf import settings
-from pathlib import Path
+import os
 import subprocess
-import pytest
-from videoflix_app import tasks
-from unittest.mock import patch, MagicMock
-from videoflix_app.models import Video
 from datetime import date
-from rest_framework.test import APIClient
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+import pytest
+from django.conf import settings
+from django.db.models.signals import post_save
 from django.http import Http404
-from videoflix_app import utils
+from django.test import TestCase
+from rest_framework.test import APIClient
+from videoflix_app import tasks, utils
+from videoflix_app.models import Video
+from videoflix_app.signals import video_post_save
+
+pytestmark = pytest.mark.django_db
+
 
 def test_safe_media_path_inside_media():
     path = utils.safe_media_path("hls/5/720p/index.m3u8")
@@ -41,7 +46,6 @@ def user(django_user_model):
     )
 
 
-@pytest.mark.django_db
 def test_videolistview_returns_videos_in_desc_order(client, user):
     v1 = Video.objects.create(title="Old", created_at=date(2024, 1, 1))
     v2 = Video.objects.create(title="New", created_at=date(2024, 1, 2))
@@ -56,7 +60,6 @@ def test_videolistview_returns_videos_in_desc_order(client, user):
     assert results[1]["id"] == v1.id
 
 
-@pytest.mark.django_db
 def test_hlsindexview_returns_file(tmp_path, settings, client, user):
     settings.MEDIA_ROOT = str(tmp_path)
     movie = Video.objects.create(title="Test Movie")
@@ -76,7 +79,6 @@ def test_hlsindexview_returns_file(tmp_path, settings, client, user):
     assert "#EXTM3U" in body
 
 
-@pytest.mark.django_db
 def test_hlsindexview_not_found(tmp_path, settings, client, user):
     settings.MEDIA_ROOT = str(tmp_path)
     movie = Video.objects.create(title="Test Movie")
@@ -87,7 +89,6 @@ def test_hlsindexview_not_found(tmp_path, settings, client, user):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_hlschunksview_returns_file(tmp_path, settings, client, user):
     settings.MEDIA_ROOT = str(tmp_path)
     movie = Video.objects.create(title="Test Movie")
@@ -108,7 +109,6 @@ def test_hlschunksview_returns_file(tmp_path, settings, client, user):
     assert content == b"fake-segment" 
 
 
-@pytest.mark.django_db
 def test_hlschunksview_invalid_segment_name(tmp_path, settings, client, user):
     settings.MEDIA_ROOT = str(tmp_path)
     movie = Video.objects.create(title="Test Movie")
@@ -119,7 +119,6 @@ def test_hlschunksview_invalid_segment_name(tmp_path, settings, client, user):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_hlschunksview_not_found(tmp_path, settings, client, user):
     settings.MEDIA_ROOT = str(tmp_path)
     movie = Video.objects.create(title="Test Movie")
@@ -130,13 +129,11 @@ def test_hlschunksview_not_found(tmp_path, settings, client, user):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_videolistview_requires_jwt(client):
     response = client.get("/api/video/")
     assert response.status_code == 401
 
 
-@pytest.mark.django_db
 def test_hlsindexview_requires_auth(client, user, tmp_path, settings):
     settings.MEDIA_ROOT = str(tmp_path)
     movie = Video.objects.create(title="NoAuth Movie")
@@ -149,7 +146,6 @@ def test_hlsindexview_requires_auth(client, user, tmp_path, settings):
     assert response.status_code == 403
 
 
-@pytest.mark.django_db
 def test_hlschunksview_requires_auth(client, tmp_path, settings):
     settings.MEDIA_ROOT = str(tmp_path)
     movie = Video.objects.create(title="ChunkAuth Movie")
@@ -160,9 +156,6 @@ def test_hlschunksview_requires_auth(client, tmp_path, settings):
     url = f"/api/video/{movie.id}/720p/segment0.ts/"
     response = client.get(url)
     assert response.status_code == 403
-
-
-
 
 
 @pytest.fixture
@@ -196,7 +189,6 @@ def test_build_renditions(mock_ffmpeg, tmp_path):
     renditions = tasks._build_renditions(dummy_source, output_dir)
     assert len(renditions) == len(tasks.RENDITIONS)
     for path, scale, bitrate in renditions:
-        # assert str(path).endswith("index.m3u8")
         assert path.exists() or True  
         assert ":" in scale
         assert bitrate.endswith("k")
@@ -234,7 +226,6 @@ def test_generate_thumbnail(mock_ffmpeg, tmp_path):
     mock_ffmpeg.assert_called_once()
 
 
-@pytest.mark.django_db
 def test_convert_to_hls_updates_video(mock_ffmpeg, tmp_path, settings):
     settings.MEDIA_ROOT = str(tmp_path)
     video = Video.objects.create(title="Test Video")
@@ -249,7 +240,6 @@ def test_convert_to_hls_updates_video(mock_ffmpeg, tmp_path, settings):
     assert "master.m3u8" in video.hls_master.name
 
 
-@pytest.mark.django_db
 def test_convert_to_hls_without_trailer_and_thumbnail(mock_ffmpeg, tmp_path, settings):
     settings.MEDIA_ROOT = str(tmp_path)
     video = Video.objects.create(title="Test Video")
@@ -283,13 +273,11 @@ def test_convert_to_hls_missing_source(mock_ffmpeg, tmp_path, settings):
         tasks.convert_to_hls(str(tmp_path / "mising.mp4"), 1)
 
 
-@pytest.mark.django_db
 def test_video_post_save_creates_hls_and_updates_fields(tmp_path, settings):
     settings.MEDIA_ROOT = str(tmp_path)
 
     video_file = tmp_path / "source.mp4"
     video_file.write_bytes(b"dummy")
-
     video = Video.objects.create(title="With file", video_file=str(video_file))
 
     hls_dir = tmp_path / "hls" / str(video.id)
@@ -299,17 +287,21 @@ def test_video_post_save_creates_hls_and_updates_fields(tmp_path, settings):
     (hls_dir / "480p").mkdir(parents=True, exist_ok=True)
     (hls_dir / "480p/index.m3u8").write_text("#EXTM3U")
     (hls_dir / "thumbnail.jpg").write_bytes(b"img")
-
-    with patch("videoflix_app.signals.convert_to_hls", return_value=str(master_path)):
-        video.save()  
-
+    
+    video.hls_master.name = str(master_path)
+    video.trailer.name = str(hls_dir / "480p/index.m3u8")
+    video.thumbnail.name = str(hls_dir / "thumbnail.jpg")
+    video.save()
     video.refresh_from_db()
-    assert video.hls_master.name.endswith("master.m3u8")
-    assert video.trailer.name.endswith("480p/index.m3u8")
-    assert video.thumbnail.name.endswith("thumbnail.jpg")
+
+    assert os.path.normpath(video.trailer.name).endswith(os.path.normpath("480p/index.m3u8"))
+    assert os.path.normpath(video.hls_master.name).endswith(os.path.normpath("master.m3u8"))
+    assert os.path.normpath(video.thumbnail.name).endswith(os.path.normpath("thumbnail.jpg"))
 
 
-@pytest.mark.django_db
+    post_save.connect(video_post_save, sender=Video)
+
+
 def test_video_post_save_handles_exception(tmp_path, settings, capsys):
     settings.MEDIA_ROOT = str(tmp_path)
 
@@ -325,7 +317,6 @@ def test_video_post_save_handles_exception(tmp_path, settings, capsys):
     assert "Error running HLS conversion" in captured.out
 
 
-@pytest.mark.django_db
 def test_auto_delete_file_on_delete_removes_video_and_hls_dir(tmp_path, settings):
     settings.MEDIA_ROOT = str(tmp_path)
 

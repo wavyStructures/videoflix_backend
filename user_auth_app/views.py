@@ -1,25 +1,33 @@
-from django.shortcuts import render, redirect
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
+from django.core.exceptions import ObjectDoesNotExist
 from django.middleware.csrf import get_token
-
-from django.utils.encoding import force_str, force_bytes
+from django.shortcuts import redirect, render
+from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
-from rest_framework import status
+from rest_framework import generics, status
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework import generics
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 from rest_framework_simplejwt.exceptions import TokenError
-from django.core.exceptions import ObjectDoesNotExist
-from .serializers import RegistrationSerializer, LoginSerializer, UserSerializer
-from .utils import send_activation_email, send_password_reset_email, create_tokens_for_user, get_jwt_max_ages, set_auth_cookies
+from rest_framework_simplejwt.token_blacklist.models import (
+    BlacklistedToken,
+    OutstandingToken,
+)
+from rest_framework_simplejwt.tokens import RefreshToken
+from .serializers import LoginSerializer, RegistrationSerializer, UserSerializer
+from .utils import (
+    create_tokens_for_user,
+    get_jwt_max_ages,
+    send_activation_email,
+    send_password_reset_email,
+    set_auth_cookies,
+)
 
 
 User = get_user_model()
+
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegistrationSerializer

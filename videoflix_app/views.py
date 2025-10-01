@@ -2,14 +2,14 @@ from django.http import FileResponse, Http404
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from user_auth_app.authentication import CookieJWTAuthentication
 from .models import Video
 from .serializers import VideoSerializer
 from .utils import safe_media_path, validate_segment_name
 
 
 class VideoListView(ListAPIView):
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     queryset = Video.objects.all().order_by("-created_at")

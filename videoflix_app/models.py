@@ -2,6 +2,9 @@ from django.db import models
 from datetime import date
 
 class Video(models.Model):
+    """
+    Represents a video object in the system.
+    """
     created_at = models.DateField(default=date.today)
     title = models.CharField(max_length=80)
     description = models.TextField(max_length=500)

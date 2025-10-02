@@ -110,6 +110,44 @@ def _generate_thumbnail(source: Path, output_dir: Path):
     ])
 
 
+def run_hls_pipeline(video_id, source_path):
+    """Background task to convert uploaded video to HLS + trailer + thumbnail."""
+
+    try:
+        video = Video.objects.get(id=video_id)
+
+        master_path = convert_to_hls(
+            source_path=source_path,
+            video_id=video.id,
+            make_trailer=True,
+            make_thumbnail=True,
+        )
+
+        if master_path and os.path.exists(master_path):
+            video.hls_master.name = os.path.relpath(master_path, settings.MEDIA_ROOT)
+
+        hls_480_index = Path(settings.MEDIA_ROOT) / "hls" / str(video.id) / "480p" / "index.m3u8"
+        if hls_480_index.exists():
+            video.trailer.name = os.path.relpath(hls_480_index, settings.MEDIA_ROOT)
+
+        thumb_path = Path(settings.MEDIA_ROOT) / "hls" / str(video.id) / "thumbnail.jpg"
+        if thumb_path.exists():
+            video.thumbnail.name = os.path.relpath(thumb_path, settings.MEDIA_ROOT)
+
+        video.save(update_fields=["hls_master", "trailer", "thumbnail"])
+        print(f"[RQ] Finished HLS pipeline for video {video.id}")
+
+
+    except Exception as e:
+        print(f"Error running HLS conversion for video {video_id}: {e}")
+
+
+
+
+
+
+
+
 def convert_to_hls(source_path: str, video_id: int, make_trailer: bool = True, make_thumbnail: bool = True) -> str:
     """Convert a video file to HLS (.m3u8 + segments). Returns the path to the master playlist."""
 

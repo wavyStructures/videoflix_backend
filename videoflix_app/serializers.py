@@ -2,6 +2,10 @@ from rest_framework import serializers
 from .models import Video
 
 class VideoSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the Video model.
+    """
+    - Exposes all fields of the Video model
     thumbnail_url = serializers.SerializerMethodField()
 
     class Meta:

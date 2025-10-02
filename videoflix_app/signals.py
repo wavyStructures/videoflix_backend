@@ -9,36 +9,15 @@ from .tasks import convert_to_hls, generate_thumbnail
 
 @receiver(post_save, sender=Video)
 def video_post_save(sender, instance, created, **kwargs):
-    """
-    Runs HLS conversion after a new video is uploaded.
-    Safely updates model fields for frontend compatibility.
+     """
+    Enqueue HLS conversion when a new video is uploaded.
     """
     if created and instance.video_file:
-        print(f"Running HLS pipeline for: {instance.video_file.path}")
+        print(f"[SIGNAL] Queuing HLS pipeline for: {instance.video_file.path}")
 
-        try:
-            master_path = convert_to_hls(
-                source_path=instance.video_file.path,
-                video_id=instance.id,
-                make_trailer=True,
-                make_thumbnail=True,
-            )
+        queue = django_rq.get_queue("default")
+        queue.enqueue(run_hls_pipeline, instance.id, instance.video_file.path)
 
-            if master_path and os.path.exists(master_path):
-                instance.hls_master.name = os.path.relpath(master_path, settings.MEDIA_ROOT)
-
-            hls_480_index = Path(settings.MEDIA_ROOT) / "hls" / str(instance.id) / "480p" / "index.m3u8"
-            if hls_480_index.exists():
-                instance.trailer.name = os.path.relpath(hls_480_index, settings.MEDIA_ROOT)
-
-            thumb_path = Path(settings.MEDIA_ROOT) / "hls" / str(instance.id) / "thumbnail.jpg"
-            if thumb_path.exists():
-                instance.thumbnail.name = os.path.relpath(thumb_path, settings.MEDIA_ROOT)
-
-            instance.save(update_fields=["hls_master", "trailer", "thumbnail"])
-
-        except Exception as e:
-            print(f"Error running HLS conversion: {e}")
 
 @receiver(post_delete, sender=Video)
 def auto_delete_file_on_delete(sender, instance, **kwargs):

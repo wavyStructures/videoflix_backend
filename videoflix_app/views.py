@@ -9,6 +9,9 @@ from .utils import safe_media_path, validate_segment_name
 
 
 class VideoListView(ListAPIView):
+    """
+    API endpoint that provides a list of all available videos.
+    """
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
     
@@ -17,6 +20,9 @@ class VideoListView(ListAPIView):
 
 
 class HLSIndexView(APIView):
+    """
+    Serves the HLS playlist file (.m3u8) for a given video and resolution.
+    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, movie_id, resolution):
@@ -30,6 +36,9 @@ class HLSIndexView(APIView):
 
 
 class HLSChunkView(APIView):
+    """
+    Serves individual HLS video segments (.ts files).
+    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, movie_id, resolution, segment):

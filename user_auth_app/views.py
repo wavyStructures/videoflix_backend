@@ -30,6 +30,9 @@ User = get_user_model()
 
 
 class RegisterView(generics.CreateAPIView):
+    """
+    Handles user registration. Creates a new user and sends an activation email. Returns user data and an activation token
+    """
     serializer_class = RegistrationSerializer
     permission_classes = [AllowAny]
 
@@ -57,6 +60,9 @@ class RegisterView(generics.CreateAPIView):
 
         
 class ActivateView(APIView):
+    """
+    Handles account activation via email link.
+    """
     permission_classes = [AllowAny]
 
     def get(self, request, uidb64, token):
@@ -82,6 +88,9 @@ class ActivateView(APIView):
 
 
 def _cookie_settings():
+    """
+    Returns secure cookie settings for JWT storage.
+    """
     return dict(
         httponly=True,
         secure=getattr(settings, "SESSION_COOKIE_SECURE", True), 
@@ -90,6 +99,9 @@ def _cookie_settings():
 
 
 class LoginView(APIView):
+    """
+    Handles user login. Validates user credentials. Issues refresh + access tokens. Stores tokens in secure cookies.
+    """
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -118,6 +130,9 @@ class LoginView(APIView):
 
 
 class LogoutView(APIView):
+    """
+    Handles user logout. Invalidates refresh token. Deletes all authentication cookies.
+    """
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -148,6 +163,9 @@ class LogoutView(APIView):
 
 
 class RefreshTokenView(APIView):
+    """
+    Issues a new access token using the refresh token from cookies. POST request required. 
+    """
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -189,6 +207,9 @@ class RefreshTokenView(APIView):
 
 
 class PasswordResetView(APIView):
+    """
+    Initiates password reset. Sends reset email if user exists. 
+    """
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -209,6 +230,9 @@ class PasswordResetView(APIView):
 
 
 class PasswordResetRedirectView(APIView):
+    """
+    Redirects user to password reset frontend page.
+    """
     permission_classes = [AllowAny]
 
     def get(self, request, uidb64, token):
@@ -226,6 +250,9 @@ class PasswordResetRedirectView(APIView):
 
 
 class PasswordConfirmView(APIView):
+    """
+    Confirms and sets new password.
+    """
     permission_classes = [AllowAny]
 
     def post(self, request, uidb64, token):

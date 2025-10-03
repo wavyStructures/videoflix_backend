@@ -6,6 +6,9 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 class CookieJWTAuthentication(BaseAuthentication):
+    """
+    Custom authentication class that authenticates users. Using a JWT stored in an HTTP cookie.
+    """
     def authenticate(self, request):
         token = request.COOKIES.get("access_token")
         if not token:

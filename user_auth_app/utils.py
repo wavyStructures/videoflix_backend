@@ -9,8 +9,7 @@ from django.utils.encoding import force_bytes
 
 def send_activation_email(user):
     """
-    Sends an account activation email to the given user.
-    Generates uidb64 + token automatically.
+    Sends an account activation email to the given user. Generates uidb64 + token automatically.
     """
 
     FRONTEND_URL = "http://127.0.0.1:5501/pages/auth/activate.html"

@@ -12,12 +12,19 @@ from django.contrib.auth.tokens import default_token_generator
 User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the User model.
+    """
     class Meta:
         model = User
         fields = ['id', 'email']
         
 
 class RegistrationSerializer(serializers.ModelSerializer):
+    """
+    Serializer for registering new users. Creating a new inactive user account (email confirmation required).
+    """
+
     confirmed_password = serializers.CharField(write_only=True)
 
     class Meta:
@@ -48,6 +55,9 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
 
 class LoginSerializer(serializers.Serializer):
+    """
+    Serializer for authenticating users.
+    """
     email = serializers.CharField()
     password = serializers.CharField(write_only=True)
     

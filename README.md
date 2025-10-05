@@ -52,26 +52,20 @@ cd videoflix_backend
 ---
 
 ## 🔹 Environment Variables  
+Create a `.env` file in the project root with the following values:  
 
-<details>
-  <summary>Click to view required <code>.env</code> configuration</summary>
+```env
+DJANGO_SECRET_KEY=your-secret-key  
+DEBUG=True  
 
-  Create a `.env` file in the project root with the following values:  
+POSTGRES_DB=videoflix  
+POSTGRES_USER=videoflix_user  
+POSTGRES_PASSWORD=videoflix_password  
+POSTGRES_HOST=db  
+POSTGRES_PORT=5432  
 
-  ```env
-  DJANGO_SECRET_KEY=your-secret-key
-  DEBUG=True
-
-  POSTGRES_DB=videoflix
-  POSTGRES_USER=videoflix_user
-  POSTGRES_PASSWORD=videoflix_password
-  POSTGRES_HOST=db
-  POSTGRES_PORT=5432
-
-  REDIS_HOST=redis
-  REDIS_PORT=6379
-</details>
-
+REDIS_HOST=redis  
+REDIS_PORT=6379  
 
 ---
 

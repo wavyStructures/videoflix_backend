@@ -72,7 +72,6 @@ REDIS_PORT=6379
 
 Start the project with:  
 
-```bash
 docker-compose up --build
 
 
@@ -118,7 +117,6 @@ HLS streams can be played in-browser using [hls.js](https://github.com/video-dev
 
 Run tests inside the backend container:  
 
-```bash
 docker-compose run backend pytest
 
 

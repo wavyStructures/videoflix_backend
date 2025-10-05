@@ -102,7 +102,6 @@ This starts:
 
 HLS streams can be played in-browser using [hls.js](https://github.com/video-dev/hls.js):  
 
-```html
 <video id="video" controls></video>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script>

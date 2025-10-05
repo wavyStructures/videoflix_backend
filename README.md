@@ -46,7 +46,6 @@ It is containerized with **Docker**, using **PostgreSQL** as the database and **
 
 ### 🔹 Clone the Repo
 
-```bash
 git clone https://github.com/your-username/videoflix_backend.git
 cd videoflix_backend
 

@@ -9,7 +9,7 @@ from .tasks import convert_to_hls, generate_thumbnail
 
 @receiver(post_save, sender=Video)
 def video_post_save(sender, instance, created, **kwargs):
-     """
+    """
     Enqueue HLS conversion when a new video is uploaded.
     """
     if created and instance.video_file:

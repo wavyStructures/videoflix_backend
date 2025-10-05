@@ -16,7 +16,6 @@ import os
 import dj_database_url
 import sys
 
-
 load_dotenv()
 
 RUNNING_IN_DOCKER = os.getenv("RUNNING_IN_DOCKER", "False").lower() in ("1", "true", "yes")
@@ -122,21 +121,31 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    "default": dj_database_url.config(
-        default=os.getenv("DATABASE_URL", "sqlite:///db.sqlite3"),
-        conn_max_age=600,
-        ssl_require=True
-    )
-    # "default": {
-    #     "ENGINE": "django.db.backends.postgresql",
-    #     "NAME": os.getenv("DB_NAME", "videoflix_db"),
-    #     "USER": os.getenv("DB_USER", "videoflix_user"),
-    #     "PASSWORD": os.getenv("DB_PASSWORD", "supersecretpassword"),
-    #     "HOST": "videoflix_database" if RUNNING_IN_DOCKER else "127.0.0.1",
-    #     "PORT": int(os.getenv("DB_PORT", 5432)),
-    # }
-}
+RUNNING_IN_DOCKER = os.getenv("RUNNING_IN_DOCKER", "False").lower() == "true"
+
+if RUNNING_IN_DOCKER:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("DB_NAME", "videoflix_db"),
+            "USER": os.getenv("DB_USER", "videoflix_user"),
+            "PASSWORD": os.getenv("DB_PASSWORD", "supersecretpassword"),
+            "HOST": os.getenv("DB_HOST", "db"),
+            "PORT": os.getenv("DB_PORT", "5432"),
+        }
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL:
+    DATABASES["default"] = dj_database_url.parse(DATABASE_URL)
+
 
 # Redis host depending on environment
 REDIS_HOST = "videoflix_redis" if RUNNING_IN_DOCKER else "127.0.0.1"

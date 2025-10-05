@@ -70,6 +70,7 @@ cd videoflix_backend
 
   REDIS_HOST=redis
   REDIS_PORT=6379
+</details>
 
 
 ---

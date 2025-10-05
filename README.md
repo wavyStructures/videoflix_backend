@@ -130,4 +130,9 @@ docker-compose run backend pytest
 ## 📜 License  
 
 **MIT License** – free to use and adapt.  
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)  
 
+**MIT License** – free to use and adapt.  
+See the [LICENSE](./LICENSE) file for full text.  
+
+---

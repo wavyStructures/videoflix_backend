@@ -54,7 +54,6 @@ cd videoflix_backend
 ## 🔹 Environment Variables  
 Create a `.env` file in the project root with the following values:  
 
-```env
 DJANGO_SECRET_KEY=your-secret-key  
 DEBUG=True  
 

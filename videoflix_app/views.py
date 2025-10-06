@@ -26,7 +26,6 @@ class HLSIndexView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, movie_id, resolution):
-        # playlist_path = os.path.join(settings.MEDIA_ROOT, 'hls', str(movie_id), resolution, 'index.m3u8')
         playlist_path = safe_media_path("hls", str(movie_id), resolution, "index.m3u8")
 
         if not playlist_path.exists():

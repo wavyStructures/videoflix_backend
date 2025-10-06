@@ -4,8 +4,9 @@ from .models import Video
 class VideoSerializer(serializers.ModelSerializer):
     """
     Serializer for the Video model. Exposes all fields of the Video model
-    thumbnail_url = serializers.SerializerMethodField()
     """
+    thumbnail_url = serializers.SerializerMethodField()
+
     class Meta:
         model = Video
         fields = ["id", "created_at", "title", "description", "thumbnail_url", "category",]

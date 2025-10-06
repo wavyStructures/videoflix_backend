@@ -35,7 +35,7 @@ services:
       - ./videoflix_app:/app/videoflix_app
       - ./manage.py:/app/manage.py
       - ./backend.entrypoint.sh:/app/backend.entrypoint.sh
-      - ./media:/app/media
+      - videoflix_media:/app/media
       - videoflix_static:/app/static
       - ./htmlcov:/app/htmlcov 
     ports:
@@ -48,5 +48,5 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  # videoflix_media:
+  videoflix_media:
   videoflix_static:

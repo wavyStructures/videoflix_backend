@@ -41,7 +41,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         if data["password"] != data["confirmed_password"]:
-            raise serializers.ValidationError("PPasswörter stimmen nicht überein.")
+            raise serializers.ValidationError("Passwords do not match.")
         validate_password(data["password"]) 
         return data
 

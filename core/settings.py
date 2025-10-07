@@ -13,7 +13,6 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from dotenv import load_dotenv
 import os
-import dj_database_url
 import sys
 
 load_dotenv()
@@ -124,10 +123,6 @@ else:
         }
     }
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-if DATABASE_URL:
-    DATABASES["default"] = dj_database_url.parse(DATABASE_URL)
-
 
 # Redis host depending on environment
 REDIS_HOST = "videoflix_redis" if RUNNING_IN_DOCKER else "127.0.0.1"
@@ -209,19 +204,20 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5501")
 BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
 
 # Email settings
-EMAIL_BACKEND = (
-    os.getenv("DJANGO_EMAIL_BACKEND")
-    if os.getenv("DJANGO_EMAIL_BACKEND")
-    else ("user_auth_app.urls.CaptureEmailBackend" if DEBUG else "django.core.mail.backends.smtp.EmailBackend")
-)
+# EMAIL_BACKEND = (
+#     os.getenv("DJANGO_EMAIL_BACKEND")
+#     if os.getenv("DJANGO_EMAIL_BACKEND")
+#     else ("user_auth_app.urls.CaptureEmailBackend" if DEBUG else "django.core.mail.backends.smtp.EmailBackend")
+# )
 
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
 EMAIL_HOST = os.getenv("EMAIL_HOST", "mail.gmx.net")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "anjainfrance@gmx.de")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
-EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False") == "True"
+# EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False") == "True"
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
 
 

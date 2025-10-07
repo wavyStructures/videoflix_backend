@@ -38,7 +38,11 @@ class RegisterView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         user = serializer.save()
+        print("📧 Sending activation email to:", user.email)
+
         send_activation_email(user)
+        print("✅ Activation email sent.")
+
         return user
 
     def create(self, request, *args, **kwargs):

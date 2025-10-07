@@ -203,15 +203,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5501")
 BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
 
-# Email settings
-# EMAIL_BACKEND = (
-#     os.getenv("DJANGO_EMAIL_BACKEND")
-#     if os.getenv("DJANGO_EMAIL_BACKEND")
-#     else ("user_auth_app.urls.CaptureEmailBackend" if DEBUG else "django.core.mail.backends.smtp.EmailBackend")
-# )
-
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-
 EMAIL_HOST = os.getenv("EMAIL_HOST", "mail.gmx.net")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "anjainfrance@gmx.de")

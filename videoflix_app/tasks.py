@@ -83,10 +83,7 @@ def _write_master_playlist(output: Path, variant_playlists: list[tuple [Path, st
 
 
 def _generate_trailer(source: Path, output_dir: Path):
-    """Generate a short 5s trailer from the video."""
-
     trailer_path = output_dir / "trailer.mp4"
-
     _run_ffmpeg([
         FFMPEG_BIN, "-y",
         "-i", source.as_posix(),
@@ -98,16 +95,15 @@ def _generate_trailer(source: Path, output_dir: Path):
         
 
 def _generate_thumbnail(source: Path, output_dir: Path):
-    """Generate a thumbnail from 1s into the video."""
-
     thumb_path = output_dir / "thumbnail.jpg"
     _run_ffmpeg([
         FFMPEG_BIN, "-y",
-            "-ss", "00:00:01",
-            "-i", source.as_posix(),
-            "-frames:v", "1",
-            thumb_path.as_posix()
+        "-ss", "00:00:01",
+        "-i", source.as_posix(),
+        "-frames:v", "1",
+        thumb_path.as_posix()
     ])
+    return thumb_path
 
 
 def run_hls_pipeline(video_id, source_path):
@@ -126,26 +122,11 @@ def run_hls_pipeline(video_id, source_path):
         if master_path and os.path.exists(master_path):
             video.hls_master.name = os.path.relpath(master_path, settings.MEDIA_ROOT)
 
-        hls_480_index = Path(settings.MEDIA_ROOT) / "hls" / str(video.id) / "480p" / "index.m3u8"
-        if hls_480_index.exists():
-            video.trailer.name = os.path.relpath(hls_480_index, settings.MEDIA_ROOT)
-
-        thumb_path = Path(settings.MEDIA_ROOT) / "hls" / str(video.id) / "thumbnail.jpg"
-        if thumb_path.exists():
-            video.thumbnail.name = os.path.relpath(thumb_path, settings.MEDIA_ROOT)
-
         video.save(update_fields=["hls_master", "trailer", "thumbnail"])
         print(f"[RQ] Finished HLS pipeline for video {video.id}")
 
-
     except Exception as e:
         print(f"Error running HLS conversion for video {video_id}: {e}")
-
-
-
-
-
-
 
 
 def convert_to_hls(source_path: str, video_id: int, make_trailer: bool = True, make_thumbnail: bool = True) -> str:
@@ -165,9 +146,9 @@ def convert_to_hls(source_path: str, video_id: int, make_trailer: bool = True, m
     thumb_path = None
 
     if make_trailer:
-        _generate_trailer(source, output_dir)
+        trailer_path = _generate_trailer(source, output_dir)
     if make_thumbnail:
-        _generate_thumbnail(source, output_dir)
+        thumb_path = _generate_thumbnail(source, output_dir)
 
     
     try:
@@ -176,7 +157,7 @@ def convert_to_hls(source_path: str, video_id: int, make_trailer: bool = True, m
         if trailer_path:
             video.trailer = _rel_to_media(trailer_path)            
         if thumb_path: 
-            video.thumbnail = _rel_to_media(Path(output_dir) / "thumbnail.jpg")
+            video.thumbnail = _rel_to_media(thumb_path)
         video.save(update_fields=["hls_master", "trailer", "thumbnail"])
     except Video.DoesNotExist:
         pass

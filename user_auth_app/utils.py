@@ -12,12 +12,12 @@ def send_activation_email(user):
     Sends an account activation email to the given user. Generates uidb64 + token automatically.
     """
 
-    FRONTEND_URL = "http://127.0.0.1:5501/pages/auth/activate.html"
+    FRONTEND_URL = settings.FRONTEND_URL
 
     uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
 
-    activation_link = f"{FRONTEND_URL}?uid={uidb64}&token={token}"
+    activation_link = f"{FRONTEND_URL}/pages/auth/activate.html?uid={uidb64}&token={token}"
     subject = "Videoflix - Activate your account"
     from_email = settings.DEFAULT_FROM_EMAIL
     to = [user.email]
@@ -42,7 +42,7 @@ def send_password_reset_email(user):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
 
-    reset_link = f"http://127.0.0.1:5501/pages/auth/confirm_password.html?uid={uid}&token={token}"
+    reset_link = f"{FRONTEND_URL}/pages/auth/confirm_password.html?uid={uid}&token={token}"
 
     subject = "Password Reset Request"
     message = f"Hi {user.email},\n\nClick the link below to reset your password:\n{reset_link}"

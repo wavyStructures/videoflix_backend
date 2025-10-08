@@ -130,7 +130,7 @@ REDIS_LOCATION = os.getenv("REDIS_LOCATION", f"redis://{REDIS_HOST}:{REDIS_PORT}
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": REDIS_LOCATION",
+        "LOCATION": REDIS_LOCATION,
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient"
         },

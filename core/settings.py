@@ -23,21 +23,17 @@ RUNNING_IN_DOCKER = os.getenv("RUNNING_IN_DOCKER", "False").lower() in ("1", "tr
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-
-SECRET_KEY = os.getenv('SECRET_KEY', default='django-insecure-@#x5h3zj!g+8g1v@2^b6^9$8&f1r7g$@t3v!p4#=g0r5qzj4m3')
+SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-default-secret")
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
 
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "example.com").split(",")
-CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", "https://example.com").split(",")
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", "localhost,127.0.0.1").split(",")
 
 
 CORS_ALLOWED_ORIGINS = os.environ.get(
     "CORS_ALLOWED_ORIGINS",
-    "http://localhost:4200,http://127.0.0.1:5501"
+    ",".join(CSRF_TRUSTED_ORIGINS)
 ).split(",")
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 CORS_ALLOW_CREDENTIALS = True
@@ -125,14 +121,16 @@ else:
 
 
 # Redis host depending on environment
-REDIS_HOST = "videoflix_redis" if RUNNING_IN_DOCKER else "127.0.0.1"
+REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 REDIS_DB = int(os.getenv("REDIS_DB", 0))
+REDIS_LOCATION = os.getenv("REDIS_LOCATION", f"redis://{REDIS_HOST}:{REDIS_PORT}/1")
+
 
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",
+        "LOCATION": REDIS_LOCATION",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient"
         },
@@ -200,16 +198,16 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Base URLs
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5501")
+FRONTEND_URL = os.getenv("FRONTEND_URL", CSRF_TRUSTED_ORIGINS[0] if CSRF_TRUSTED_ORIGINS else "http://localhost:5501")
 BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = os.getenv("EMAIL_HOST", "mail.gmx.net")
+EMAIL_HOST = os.getenv("EMAIL_HOST")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "anjainfrance@gmx.de")
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
-# EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False") == "True"
+EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False") == "True"
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
 
 

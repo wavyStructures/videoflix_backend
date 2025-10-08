@@ -52,19 +52,28 @@ cd videoflix_backend
 ---
 
 ## 🔹 Environment Variables  
-Create a `.env` file in the project root with the following values:  
 
-DJANGO_SECRET_KEY=your-secret-key  
-DEBUG=True  
+Copy the `.env.template` to `.env` in the project root:
+cp .env.template .env
 
-POSTGRES_DB=videoflix  
-POSTGRES_USER=videoflix_user  
-POSTGRES_PASSWORD=videoflix_password  
-POSTGRES_HOST=db  
-POSTGRES_PORT=5432  
+Then update the values in .env according to your environment:
 
-REDIS_HOST=redis  
-REDIS_PORT=6379  
+SECRET_KEY → your Django secret key
+
+DEBUG → True or False
+
+ALLOWED_HOSTS → your hostnames / IPs
+
+CSRF_TRUSTED_ORIGINS → URLs of your frontend for login / activation / password reset
+
+FRONTEND_URL → base URL of your frontend
+
+EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD → your SMTP credentials
+
+DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT → PostgreSQL settings
+
+REDIS_HOST, REDIS_PORT, REDIS_DB, REDIS_LOCATION → Redis settings
+
 
 ---
 

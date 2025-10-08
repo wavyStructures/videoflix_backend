@@ -56,23 +56,28 @@ cd videoflix_backend
 Copy the `.env.template` to `.env` in the project root:
 cp .env.template .env
 
-Then update the values in .env according to your environment:
+Update the values in `.env` according to your environment:
 
-SECRET_KEY → your Django secret key
-
-DEBUG → True or False
-
-ALLOWED_HOSTS → your hostnames / IPs
-
-CSRF_TRUSTED_ORIGINS → URLs of your frontend for login / activation / password reset
-
-FRONTEND_URL → base URL of your frontend
-
-EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD → your SMTP credentials
-
-DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT → PostgreSQL settings
-
-REDIS_HOST, REDIS_PORT, REDIS_DB, REDIS_LOCATION → Redis settings
+| Variable              | Description                                           |
+|-----------------------|-------------------------------------------------------|
+| `SECRET_KEY`          | Your Django secret key                                |
+| `DEBUG`               | True or False                                        |
+| `ALLOWED_HOSTS`       | Your hostnames / IPs                                 |
+| `CSRF_TRUSTED_ORIGINS`| URLs of your frontend for login / activation / password reset |
+| `FRONTEND_URL`        | Base URL of your frontend                             |
+| `EMAIL_HOST`          | SMTP server host                                     |
+| `EMAIL_PORT`          | SMTP server port                                     |
+| `EMAIL_HOST_USER`     | SMTP username                                        |
+| `EMAIL_HOST_PASSWORD` | SMTP password                                        |
+| `DB_NAME`             | PostgreSQL database name                              |
+| `DB_USER`             | PostgreSQL user                                      |
+| `DB_PASSWORD`         | PostgreSQL password                                  |
+| `DB_HOST`             | PostgreSQL host                                      |
+| `DB_PORT`             | PostgreSQL port                                      |
+| `REDIS_HOST`          | Redis host                                           |
+| `REDIS_PORT`          | Redis port                                           |
+| `REDIS_DB`            | Redis DB for RQ queues                                |
+| `REDIS_LOCATION`      | Redis URL for Django cache                             |
 
 
 ---

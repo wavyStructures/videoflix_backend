@@ -27,16 +27,22 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault("is_active", True)
 
         return self.create_user(email, password, **extra_fields)
+   
         
 class CustomUser(AbstractUser):
     """Videoflix user model. Username is kept for compatibility; email is unique."""
 
     username = models.CharField(max_length=150, unique=True, null=True, blank=True)
     email = models.EmailField(unique=True, max_length=255)
-    phone = models.CharField(max_length=20, null=True, blank=True)  
-    address = models.CharField(max_length=255, null=True, blank=True)   
+
     
     objects = CustomUserManager()
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
+
+    class Meta:
+        verbose_name = "User"
+        verbose_name_plural = "Users"
+
+

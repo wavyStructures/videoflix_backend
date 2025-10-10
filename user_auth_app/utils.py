@@ -1,11 +1,15 @@
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 from django.contrib.auth.tokens import default_token_generator
 from django.middleware.csrf import get_token
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
+from django.utils.timezone import now
+
 
 def send_activation_email(user):
     """
@@ -22,11 +26,13 @@ def send_activation_email(user):
     from_email = settings.DEFAULT_FROM_EMAIL
     to = [user.email]
 
-    text_content = f"Please click the link below to activate your account: {activation_link}"
-    html_content = f"""
-        <p>Please click the link below to activate your account:</p>
-        <p><a href="{activation_link}">activating account</a></p>
-    """
+    # text_content = f"Please click the link below to activate your account: {activation_link}"
+    html_content = render_to_string("emails/account_activation.html", {
+        "user": user,
+        "activation_link": activation_link,
+        "current_year": now().year
+    })
+    text_content = strip_tags(html_content)
 
     msg = EmailMultiAlternatives(subject, text_content, from_email, to)
     msg.attach_alternative(html_content, "text/html")
@@ -41,12 +47,26 @@ def send_password_reset_email(user):
 
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
-
     reset_link = f"{FRONTEND_URL}/pages/auth/confirm_password.html?uid={uid}&token={token}"
 
     subject = "Password Reset Request"
-    message = f"Hi {user.email},\n\nClick the link below to reset your password:\n{reset_link}"
-    user.email_user(subject, message)
+
+    context = {
+        "user_email": user.email,
+        "reset_link": reset_link
+    }
+
+    text_content = f"Hi {user.email},\n\nClick here to reset your password:\n{reset_link}"
+    html_content = render_to_string("emails/password_reset.html", context)
+
+    email = EmailMultiAlternatives(
+        subject=subject,
+        body=text_content,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[user.email],
+    )
+    email.attach_alternative(html_content, "text/html")
+    email.send()
 
 
 def create_tokens_for_user(user):

@@ -1,13 +1,14 @@
-env/
-.env
+    env/
+    .env
 
-__pycache__/
-*.py[cod]
-*.pyo
+    __pycache__/
+    *.py[cod]
+    *.pyo
 
-*.log
-*.pot
-*.pyc
+    *.log
+    *.pot
+    *.pyc
 
-.vscode/
+    .vscode/
 
+    db.sqlite3

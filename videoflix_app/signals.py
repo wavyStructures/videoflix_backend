@@ -3,8 +3,9 @@ from pathlib import Path
 from django.db.models.signals import post_save, post_delete 
 from django.dispatch import receiver
 from django.conf import settings
+import django_rq
 from .models import Video
-from .tasks import convert_to_hls, generate_thumbnail
+from .tasks import run_hls_pipeline, convert_to_hls, generate_thumbnail
 
 
 @receiver(post_save, sender=Video)

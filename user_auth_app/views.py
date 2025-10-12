@@ -4,7 +4,6 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ObjectDoesNotExist
 from django.middleware.csrf import get_token
 from django.shortcuts import redirect, render
-from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -37,11 +36,11 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
-        user = serializer.save()
-        print("📧 Sending activation email to:", user.email)
+        user = serializer.save(is_active=False)
+        print("Sending activation email to:", user.email)
 
         send_activation_email(user)
-        print("✅ Activation email sent.")
+        print("Activation email sent.")
 
         return user
 
@@ -51,7 +50,7 @@ class RegisterView(generics.CreateAPIView):
         user = self.perform_create(serializer)
 
         token = default_token_generator.make_token(user)
-        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+        uidb64 = urlsafe_base64_encode(str(user.pk).encode())
         headers = self.get_success_headers(serializer.data)
         return Response(
             {
@@ -71,14 +70,17 @@ class ActivateView(APIView):
 
     def get(self, request, uidb64, token):
         try:
-            uid = force_str(urlsafe_base64_decode(uidb64))
+            uid = urlsafe_base64_decode(uidb64).decode()
             user = User.objects.get(pk=uid)
         except (TypeError, ValueError, OverflowError, ObjectDoesNotExist):
             return Response(
                     {"message": "Activation failed."},
                     status=status.HTTP_400_BAD_REQUEST
             )
-
+        print(f"Checking token for {user.email}")
+        print("Token valid:", default_token_generator.check_token(user, token))
+        print("Token provided:", token)
+        print("Expected:", default_token_generator.make_token(user))
         if default_token_generator.check_token(user, token):
             user.is_active = True
             user.save()
@@ -271,7 +273,7 @@ class PasswordConfirmView(APIView):
             return Response({"error": "Passwörter stimmen nicht überein."},
                             status=status.HTTP_400_BAD_REQUEST)
         try:
-            uid = force_str(urlsafe_base64_decode(uidb64))
+            uid = urlsafe_base64_decode(uidb64).decode()
             user = User.objects.get(pk=uid)
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
             return Response({"error": "Ungültiger Link."},

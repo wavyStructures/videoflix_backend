@@ -34,7 +34,7 @@ services:
       - ./videoflix_app:/app/videoflix_app
       - ./manage.py:/app/manage.py
       - ./backend.entrypoint.sh:/app/backend.entrypoint.sh
-      - .media:/app/media
+      - ./media:/app/media
       - videoflix_static:/app/static
       - ./htmlcov:/app/htmlcov 
     ports:
@@ -50,14 +50,15 @@ services:
       dockerfile: backend.Dockerfile
     env_file: .env
     container_name: videoflix_worker
-    command: sh -c "python manage.py rqworker default"
+    entrypoint: sh
+    command: -c "python manage.py rqworker default"
     volumes:
       - ./core:/app/core
       - ./user_auth_app:/app/user_auth_app
       - ./videoflix_app:/app/videoflix_app
       - ./manage.py:/app/manage.py
       - ./backend.entrypoint.sh:/app/backend.entrypoint.sh
-      - .media:/app/media
+      - ./media:/app/media
       - videoflix_static:/app/static
     depends_on:
       - web

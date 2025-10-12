@@ -7,7 +7,6 @@ from django.contrib.auth.tokens import default_token_generator
 from django.middleware.csrf import get_token
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
 from django.utils.timezone import now
 
 
@@ -18,7 +17,7 @@ def send_activation_email(user):
 
     FRONTEND_URL = settings.FRONTEND_URL
 
-    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+    uidb64 = urlsafe_base64_encode(str(user.pk).encode())
     token = default_token_generator.make_token(user)
 
     activation_link = f"{FRONTEND_URL}/pages/auth/activate.html?uid={uidb64}&token={token}"
@@ -26,7 +25,6 @@ def send_activation_email(user):
     from_email = settings.DEFAULT_FROM_EMAIL
     to = [user.email]
 
-    # text_content = f"Please click the link below to activate your account: {activation_link}"
     html_content = render_to_string("emails/account_activation.html", {
         "user": user,
         "activation_link": activation_link,
@@ -45,7 +43,7 @@ def send_password_reset_email(user):
     Generates uidb64 + token automatically and sends email.
     """
 
-    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    uid = urlsafe_base64_encode(str(user.pk).encode())
     token = default_token_generator.make_token(user)
     reset_link = f"{FRONTEND_URL}/pages/auth/confirm_password.html?uid={uid}&token={token}"
 

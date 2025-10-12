@@ -3,7 +3,6 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.urls import reverse
-from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from rest_framework.test import APIClient
 from user_auth_app.serializers import LoginSerializer
@@ -85,7 +84,7 @@ def test_activate_user(client):
         email="inactive@example.com", password="securepassword", is_active=False
     )
 
-    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+    uidb64 = urlsafe_base64_encode(str(user.pk).encode())
     token = default_token_generator.make_token(user)
     url = reverse("activate", args=[uidb64, token])
 
@@ -108,7 +107,7 @@ def test_password_reset_flow(client):
     assert response.data["message"].startswith("An email has been sent")
 
 
-    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+    uidb64 = urlsafe_base64_encode(str(user.pk).encode())
     token = default_token_generator.make_token(user)
     
     confirm_url = reverse("password_confirm", args=[uidb64, token])
@@ -140,7 +139,7 @@ def test_password_reset_non_existing_email(client):
 
 def test_password_reset_passwords_do_not_match(client):
     user = User.objects.create_user(email="resetmismatch@example.com", password="pw123")
-    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+    uidb64 = urlsafe_base64_encode(str(user.pk).encode())
     token = default_token_generator.make_token(user)
 
     confirm_url = reverse("password_confirm", args=[uidb64, token])
@@ -153,7 +152,7 @@ def test_password_reset_passwords_do_not_match(client):
 
 def test_password_reset_invalid_token(client):
     user = User.objects.create_user(email="invalidtoken@example.com", password="pw123")
-    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+    uidb64 = urlsafe_base64_encode(str(user.pk).encode())
 
     confirm_url = reverse("password_confirm", args=[uidb64, "invalidtoken"])
     response = client.post(confirm_url, {"new_password": "x", "confirm_password": "x"})
@@ -301,7 +300,7 @@ def test_activate_view_invalid_token_but_valid_uid(client):
         password="pass1234",
         is_active=False
     )
-    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+    uidb64 = urlsafe_base64_encode(str(user.pk).encode())
 
     invalid_token = "invalid-token"
 

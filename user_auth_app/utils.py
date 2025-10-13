@@ -15,12 +15,10 @@ def send_activation_email(user):
     Sends an account activation email to the given user. Generates uidb64 + token automatically.
     """
 
-    FRONTEND_URL = settings.FRONTEND_URL
-
     uidb64 = urlsafe_base64_encode(str(user.pk).encode())
     token = default_token_generator.make_token(user)
 
-    activation_link = f"{FRONTEND_URL}/pages/auth/activate.html?uid={uidb64}&token={token}"
+    activation_link = f"{settings.FRONTEND_URL}/pages/auth/activate.html?uid={uidb64}&token={token}"
     subject = "Videoflix - Activate your account"
     from_email = settings.DEFAULT_FROM_EMAIL
     to = [user.email]
@@ -28,6 +26,7 @@ def send_activation_email(user):
     html_content = render_to_string("emails/account_activation.html", {
         "user": user,
         "activation_link": activation_link,
+        "logo_url": settings.EMAIL_LOGO_URL,
         "current_year": now().year
     })
     text_content = strip_tags(html_content)

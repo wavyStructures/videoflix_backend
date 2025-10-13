@@ -17,8 +17,7 @@
 <body>
     <div class="container">
         <div class="logo">
-            <!-- hier dein Logo einfügen -->
-            <img src="https://yourcdn.com/videoflix-logo.png" alt="Videoflix Logo" />
+            <img src="{{ logo_url }}" alt="VideoFlix">
         </div>
         <h1>Confirm your email</h1>
         <p>Dear {{ user.first_name|default:user.username }},</p>

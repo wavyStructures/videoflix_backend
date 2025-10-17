@@ -1,5 +1,6 @@
 import os
 import subprocess
+import shutil
 from pathlib import Path
 from django.conf import settings
 from .models import Video
@@ -56,9 +57,12 @@ def _build_renditions(source: Path, output_dir: Path) -> list[tuple[Path, str, s
             "-i", source.as_posix(),
             "-vf", f"scale=w={width}:h={height}:force_original_aspect_ratio=decrease,"
                    f"pad=w=ceil(iw/2)*2:h=ceil(ih/2)*2",
+            "-c:v", "libx264",
+            "-c:a", "aac",          
             "-b:v", bitrate,
             "-hls_time", str(HLS_SEG_DUR),
             "-hls_list_size", "0",
+            "-hls_segment_filename", f"{stream_dir.as_posix()}/segment_%03d.ts",
             "-f", "hls",
             playlist_path.as_posix()
         ]
@@ -95,14 +99,25 @@ def _generate_trailer(source: Path, output_dir: Path):
         
 
 def _generate_thumbnail(source: Path, output_dir: Path):
+    """Generate a thumbnail image from the video at the given timestamp.
+    If generation fails, use fallback image.
+    """
+
     thumb_path = output_dir / "thumbnail.jpg"
-    _run_ffmpeg([
-        FFMPEG_BIN, "-y",
-        "-ss", "00:00:01",
-        "-i", source.as_posix(),
-        "-frames:v", "1",
-        thumb_path.as_posix()
-    ])
+    fallback_path = Path(settings.BASE_DIR) / "static" / "fallback_thumbnail.jpg"
+
+    try:
+        _run_ffmpeg([
+            FFMPEG_BIN, "-y",
+            "-ss", "00:00:01",
+            "-i", source.as_posix(),
+            "-frames:v", "1",
+            thumb_path.as_posix()
+        ])
+    except Exception as e:
+        print(f"Thumbnail generation failed: {e}")
+        shutil.copy(fallback_path, thumb_path)
+
     return thumb_path
 
 
@@ -165,14 +180,15 @@ def convert_to_hls(source_path: str, video_id: int, make_trailer: bool = True, m
     return master_path.as_posix()
 
 
-def generate_thumbnail(input_file, output_file, time="00:00:01"):
-    """Grab a frame from the video as a thumbnail."""
+# def generate_thumbnail(input_file, output_file, time="00:00:01"):
+#     """Grab a frame from the video as a thumbnail."""
 
-    _run_ffmpeg ([
-        FFMPEG_BIN,
-        "-i", input_file,
-        "-ss", time,           
-        "-vframes", "1",
-        output_file
-    ])
-    return output_file
+#     _run_ffmpeg ([
+#         FFMPEG_BIN,
+#         "-i", input_file,
+#         "-ss", time,           
+#         "-vframes", "1",
+#         output_file
+#     ])
+#     return output_file
+

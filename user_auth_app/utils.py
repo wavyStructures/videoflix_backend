@@ -51,6 +51,7 @@ def send_password_reset_email(user):
     context = {
         "user_email": user.email,
         "reset_link": reset_link,
+        "logo_url": settings.EMAIL_LOGO_URL,
         "current_year": now().year
     }
 

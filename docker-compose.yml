@@ -35,7 +35,7 @@ services:
       - ./manage.py:/app/manage.py
       - ./backend.entrypoint.sh:/app/backend.entrypoint.sh
       - ./media:/app/media
-      - videoflix_static:/app/static
+      - ./static:/app/static
       - ./htmlcov:/app/htmlcov 
     ports:
       - "8000:8000"

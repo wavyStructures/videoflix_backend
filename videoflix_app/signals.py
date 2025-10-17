@@ -5,7 +5,7 @@ from django.dispatch import receiver
 from django.conf import settings
 import django_rq
 from .models import Video
-from .tasks import run_hls_pipeline, convert_to_hls, generate_thumbnail
+from .tasks import run_hls_pipeline, convert_to_hls, _generate_thumbnail
 
 
 @receiver(post_save, sender=Video)

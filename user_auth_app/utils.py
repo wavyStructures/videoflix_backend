@@ -44,13 +44,14 @@ def send_password_reset_email(user):
 
     uid = urlsafe_base64_encode(str(user.pk).encode())
     token = default_token_generator.make_token(user)
-    reset_link = f"{FRONTEND_URL}/pages/auth/confirm_password.html?uid={uid}&token={token}"
+    reset_link = f"{settings.FRONTEND_URL}/pages/auth/confirm_password.html?uid={uid}&token={token}"
 
     subject = "Password Reset Request"
 
     context = {
         "user_email": user.email,
-        "reset_link": reset_link
+        "reset_link": reset_link,
+        "current_year": now().year
     }
 
     text_content = f"Hi {user.email},\n\nClick here to reset your password:\n{reset_link}"

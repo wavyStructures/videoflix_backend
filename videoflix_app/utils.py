@@ -6,11 +6,12 @@ from django.http import Http404
 
 def safe_media_path(*parts: str) -> Path:
     """
-    Build a path under MEDIA_ROOT and ensure the resolved path is inside MEDIA_ROOT.
-    Raises Http404 if the candidate path is invalid or outside MEDIA_ROOT.
+    Safely build a path under MEDIA_ROOT.
+    Raises Http404 if the path escapes MEDIA_ROOT.
     """
+
     base = Path(settings.MEDIA_ROOT).resolve()
-    candidate = (base.joinpath(*parts)).resolve(strict=False)  
+    candidate = (base.joinpath(*parts)).resolve()  
 
     if os.path.commonpath([str(base), str(candidate)]) != str(base):
         raise Http404("Forbidden")

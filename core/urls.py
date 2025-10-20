@@ -12,7 +12,9 @@ urlpatterns = [
     path("api/", include("user_auth_app.urls")),
     path("api/video/", include("videoflix_app.urls")),
 
-    re_path(r"^media/(?P<path>.*)$", serve, {"document_root": str(settings.MEDIA_ROOT)}),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+] 
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+urlpatterns += static('/video/', document_root=settings.MEDIA_ROOT / 'video')
 
 

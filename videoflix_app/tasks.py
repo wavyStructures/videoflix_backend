@@ -87,6 +87,8 @@ def _write_master_playlist(output: Path, variant_playlists: list[tuple [Path, st
 
 
 def _generate_trailer(source: Path, output_dir: Path):
+    """Generate a trailer."""
+    
     trailer_path = output_dir / "trailer.mp4"
     _run_ffmpeg([
         FFMPEG_BIN, "-y",

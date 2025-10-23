@@ -104,6 +104,7 @@ def _generate_thumbnail(source: Path, output_dir: Path):
     """Generate a thumbnail image from the video at the given timestamp.
     If generation fails, use fallback image.
     """
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     thumb_path = output_dir / "thumbnail.jpg"
     fallback_path = Path(settings.BASE_DIR) / "static" / "fallback_thumbnail.jpg"
@@ -118,9 +119,13 @@ def _generate_thumbnail(source: Path, output_dir: Path):
         ])
     except Exception as e:
         print(f"Thumbnail generation failed: {e}")
-        shutil.copy(fallback_path, thumb_path)
+        try:
+            shutil.copy(fallback_path, thumb_path)
+        except Exception as copy_error:
+            print(f"Fallback thumbnail copy failed: {copy_error}")
+            return fallback_path  
 
-    return thumb_path
+    return thumb_path if thumb_path.exists() else fallback_path
 
 
 def run_hls_pipeline(video_id, source_path):
@@ -182,15 +187,5 @@ def convert_to_hls(source_path: str, video_id: int, make_trailer: bool = True, m
     return master_path.as_posix()
 
 
-# def generate_thumbnail(input_file, output_file, time="00:00:01"):
-#     """Grab a frame from the video as a thumbnail."""
 
-#     _run_ffmpeg ([
-#         FFMPEG_BIN,
-#         "-i", input_file,
-#         "-ss", time,           
-#         "-vframes", "1",
-#         output_file
-#     ])
-#     return output_file
 

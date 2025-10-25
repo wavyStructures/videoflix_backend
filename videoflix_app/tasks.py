@@ -68,6 +68,7 @@ def _build_renditions(source: Path, output_dir: Path) -> list[tuple[Path, str, s
         ]
         _run_ffmpeg(command)
         variant_playlists.append((playlist_path, rendition['scale'], bitrate))
+    
     return variant_playlists
 
 
@@ -101,7 +102,8 @@ def _generate_trailer(source: Path, output_dir: Path):
         
 
 def _generate_thumbnail(source: Path, output_dir: Path):
-    """Generate a thumbnail image from the video at the given timestamp.
+    """
+    Generate a thumbnail image from the video at the given timestamp.
     If generation fails, use fallback image.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -129,7 +131,9 @@ def _generate_thumbnail(source: Path, output_dir: Path):
 
 
 def run_hls_pipeline(video_id, source_path):
-    """Background task to convert uploaded video to HLS + trailer + thumbnail."""
+    """
+    Background task to convert uploaded video to HLS + trailer + thumbnail.
+    """
 
     try:
         video = Video.objects.get(id=video_id)
@@ -152,7 +156,9 @@ def run_hls_pipeline(video_id, source_path):
 
 
 def convert_to_hls(source_path: str, video_id: int, make_trailer: bool = True, make_thumbnail: bool = True) -> str:
-    """Convert a video file to HLS (.m3u8 + segments). Returns the path to the master playlist."""
+    """
+    Convert a video file to HLS (.m3u8 + segments). Returns the path to the master playlist.
+    """
 
     source = Path(source_path)
     if not source.exists():

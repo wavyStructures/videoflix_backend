@@ -132,12 +132,22 @@ Run tests inside the backend container:
 
 docker-compose run backend pytest
 
+---
 
-## 📖 Notes for Production  
+## 📖 Notes for Production
 
-- 🌐 **Nginx** → Serve static/videos efficiently (`X-Accel-Redirect` recommended)  
-- ⚙️ **CORS** → Use [django-cors-headers](https://github.com/adamchainz/django-cors-headers)  
-- 🔑 **Video Security** → Signed URLs or pre-signed tokens  
+These recommendations are optional and only relevant if the project is deployed to a production server.  
+The application runs perfectly **without** them during local development or Docker-based testing.
+
+### 🌐 Nginx (optional)
+Use **Nginx** to efficiently serve static and video files in production.  
+For secure and performant streaming, it’s recommended to use `X-Accel-Redirect`.
+
+### ⚙️ CORS
+Enable [**django-cors-headers**](https://github.com/adamchainz/django-cors-headers) to handle cross-origin requests safely when your frontend and backend run on different domains.
+
+### 🔑 Video Security
+For advanced setups, use **signed URLs** or **pre-signed tokens** to protect private video streams from unauthorized access.
 
 ---
 

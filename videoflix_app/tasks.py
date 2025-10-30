@@ -3,6 +3,7 @@ import subprocess
 import shutil
 from pathlib import Path
 from django.conf import settings
+from django.core.files import File
 from .models import Video
 
 
@@ -185,7 +186,9 @@ def convert_to_hls(source_path: str, video_id: int, make_trailer: bool = True, m
         if trailer_path:
             video.trailer = _rel_to_media(trailer_path)            
         if thumb_path: 
-            video.thumbnail = _rel_to_media(thumb_path)
+            thumb_rel = _rel_to_media(thumb_path)
+            with open(thumb_path, "rb") as f:
+                video.thumbnail.save(os.path.basename(thumb_rel), File(f), save=False)
         video.save(update_fields=["hls_master", "trailer", "thumbnail"])
     except Video.DoesNotExist:
         pass

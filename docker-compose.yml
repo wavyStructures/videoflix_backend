@@ -1,16 +1,22 @@
 services:
   db:
-    image: postgres:15-alpine
+    image: postgres:latest
     container_name: videoflix_database
     env_file: .env
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     ports:
       - "5432:5432"
+
 
   redis:
     image: redis:7-alpine
@@ -22,6 +28,11 @@ services:
 
 
   web:
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started   
     build:
       context: .
       dockerfile: backend.Dockerfile
@@ -34,15 +45,12 @@ services:
       - ./videoflix_app:/app/videoflix_app
       - ./manage.py:/app/manage.py
       - ./backend.entrypoint.sh:/app/backend.entrypoint.sh
-      - ./media:/app/media
-      - ./static:/app/static
+      - videoflix_media:/app/media
+      - videoflix_static:/app/static
       - ./htmlcov:/app/htmlcov 
     ports:
       - "8000:8000"
-    depends_on:
-      - db 
-      - redis 
-  
+
 
   worker:
     build:
@@ -50,18 +58,20 @@ services:
       dockerfile: backend.Dockerfile
     env_file: .env
     container_name: videoflix_worker
-    entrypoint: sh
-    command: -c "python manage.py rqworker default"
+    # entrypoint: sh
+    # command: -c "python manage.py rqworker default"
+    environment: 
+      RUN: worker
     volumes:
       - ./core:/app/core
       - ./user_auth_app:/app/user_auth_app
       - ./videoflix_app:/app/videoflix_app
       - ./manage.py:/app/manage.py
       - ./backend.entrypoint.sh:/app/backend.entrypoint.sh
-      - ./media:/app/media
+      - videoflix_media:/app/media
       - videoflix_static:/app/static
     depends_on:
-      - web
+      - db
       - redis
 
 
@@ -70,3 +80,6 @@ volumes:
   redis_data:
   videoflix_media:
   videoflix_static:
+
+
+

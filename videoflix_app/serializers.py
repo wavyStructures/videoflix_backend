@@ -14,27 +14,18 @@ class VideoSerializer(serializers.ModelSerializer):
         fields = ["id", "created_at", "title", "description", "thumbnail_url", "category",]
 
     def get_thumbnail_url(self, obj):
-        """
-        Return the absolute URL to the videos thumbnail image.
-        Checks for a generated HLS thumbnail first; falls back to the
-        uploaded thumbnail if present. Returns an empty string if none found.
-        """
-        thumb_path = os.path.join(settings.MEDIA_ROOT, 'hls', str(obj.id), 'thumbnail.jpg')
-        thumb_url = f"/media/hls/{obj.id}/thumbnail.jpg"
-
-        if os.path.exists(thumb_path):
-            request = self.context.get("request")
-            if request:
-                return request.build_absolute_uri(thumb_url)
-            return thumb_url
-
+        request = self.context.get("request")
+        
         if obj.thumbnail and hasattr(obj.thumbnail, "url"):
-            request = self.context.get("request")
-            if request:
-                return request.build_absolute_uri(obj.thumbnail.url)
-            return obj.thumbnail.url
+            url = obj.thumbnail.url
+        else:
+            url = "/static/video/thumbnail.jpg"
+        
+        if request:
+            return request.build_absolute_uri(url)
+        return url
 
-        return ""
+
 
 
 

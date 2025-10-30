@@ -26,5 +26,10 @@ class Video(models.Model):
             return self.title
     
 
+    @property
+    def thumbnail_url(self):
+        if self.thumbnail and hasattr(self.thumbnail, "url"):
+            return self.thumbnail_url
+        return "static/video/thumbnail.jpg"
 
 

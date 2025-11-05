@@ -19,17 +19,12 @@ class Video(models.Model):
         
     hls_master = models.FileField(upload_to="video/hls", max_length=500, blank=True, null=True)
     trailer = models.FileField(upload_to="video/trailer", max_length=500, blank=True, null=True)
-    thumbnail = models.ImageField(upload_to="video/", max_length=500, blank=True, null=True)
+    thumbnail_url = models.ImageField(upload_to="thumbnails/", max_length=500, blank=True, null=True)
 
          
     def __str__(self):
             return self.title
     
 
-    @property
-    def thumbnail_url(self):
-        if self.thumbnail and hasattr(self.thumbnail, "url"):
-            return self.thumbnail_url
-        return "static/video/thumbnail.jpg"
 
 

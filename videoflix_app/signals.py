@@ -14,10 +14,11 @@ def video_post_save(sender, instance, created, **kwargs):
     Enqueue HLS conversion when a new video is uploaded.
     """
     if created and instance.video_file:
-        print(f"[SIGNAL] Queuing HLS pipeline for: {instance.video_file.path}")
+        file_path = os.path.join(settings.MEDIA_ROOT, 'video', os.path.basename(instance.video_file.name))
+        print(f"[SIGNAL] Queuing HLS pipeline for: {file_path}")
 
         queue = django_rq.get_queue("default")
-        queue.enqueue(run_hls_pipeline, instance.id, instance.video_file.path)
+        queue.enqueue(run_hls_pipeline, instance.id, file_path)
 
 
 @receiver(post_delete, sender=Video)

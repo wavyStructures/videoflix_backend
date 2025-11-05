@@ -15,15 +15,11 @@ class VideoSerializer(serializers.ModelSerializer):
 
     def get_thumbnail_url(self, obj):
         request = self.context.get("request")
-        
-        if obj.thumbnail and hasattr(obj.thumbnail, "url"):
-            url = obj.thumbnail.url
-        else:
-            url = "/static/video/thumbnail.jpg"
-        
-        if request:
-            return request.build_absolute_uri(url)
-        return url
+
+        if obj.thumbnail_url:
+            return request.build_absolute_uri(obj.thumbnail_url.url)
+        return None
+
 
 
 

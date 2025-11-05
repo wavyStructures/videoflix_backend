@@ -99,7 +99,7 @@ def test_hlschunksview_returns_file(tmp_path, settings, client, user):
     seg_path.write_bytes(b"fake-segment")
 
     client.force_authenticate(user=user)
-    url = f"/api/video/{movie.id}/720p/segment0.ts/"
+    url = f"/api/video/{movie.id}/720p/segment0.ts"
     response = client.get(url)
 
     assert response.status_code == 200
@@ -114,7 +114,7 @@ def test_hlschunksview_invalid_segment_name(tmp_path, settings, client, user):
     movie = Video.objects.create(title="Test Movie")
     client.force_authenticate(user=user)
 
-    url = f"/api/video/{movie.id}/720p/../secret.ts/"
+    url = f"/api/video/{movie.id}/720p/../secret.ts"
     response = client.get(url)
     assert response.status_code == 404
 
@@ -124,7 +124,7 @@ def test_hlschunksview_not_found(tmp_path, settings, client, user):
     movie = Video.objects.create(title="Test Movie")
     client.force_authenticate(user=user)
 
-    url = f"/api/video/{movie.id}/720p/missing.ts/"
+    url = f"/api/video/{movie.id}/720p/missing.ts"
     response = client.get(url)
     assert response.status_code == 404
 
@@ -153,7 +153,7 @@ def test_hlschunksview_requires_auth(client, tmp_path, settings):
     hls_dir.mkdir(parents=True)
     (hls_dir / "segment0.ts").write_bytes(b"data")
 
-    url = f"/api/video/{movie.id}/720p/segment0.ts/"
+    url = f"/api/video/{movie.id}/720p/segment0.ts"
     response = client.get(url)
     assert response.status_code == 403
 
@@ -252,7 +252,7 @@ def test_convert_to_hls_without_trailer_and_thumbnail(mock_ffmpeg, tmp_path, set
     
     video.refresh_from_db()
     assert "master.m3u8" in video.hls_master.name
-    assert not video.thumbnail 
+    assert not video.thumbnail_url
     assert not video.trailer
 
 

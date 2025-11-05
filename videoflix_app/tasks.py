@@ -11,9 +11,9 @@ FFMPEG_BIN = "ffmpeg"
 HLS_SEG_DUR = int(getattr(settings, "HLS_SEG_DUR", 4))
 
 RENDITIONS = [
-    {"name": "480p", "scale": "854:480",  "bitrate": "800k",  "maxrate": "856k",  "bufsize": "1200k"},
-    {"name": "720p", "scale": "1280:720", "bitrate": "1400k", "maxrate": "1498k", "bufsize": "2100k"},
-    {"name": "1080p","scale": "1920:1080","bitrate": "3000k", "maxrate": "3210k", "bufsize": "4500k"},
+    {"name": "480p", "scale": "854:480",  "bitrate": "800k"},
+    {"name": "720p", "scale": "1280:720", "bitrate": "1400k"},
+    {"name": "1080p","scale": "1920:1080","bitrate": "3000k"},
 ]
 
 
@@ -132,28 +132,18 @@ def _generate_thumbnail(source: Path, output_dir: Path):
 
 
 def run_hls_pipeline(video_id, source_path):
-    """
-    Background task to convert uploaded video to HLS + trailer + thumbnail.
-    """
-
     try:
-        video = Video.objects.get(id=video_id)
-
-        master_path = convert_to_hls(
+        convert_to_hls(
             source_path=source_path,
-            video_id=video.id,
+            video_id=video_id,
             make_trailer=True,
             make_thumbnail=True,
         )
-
-        if master_path and os.path.exists(master_path):
-            video.hls_master.name = os.path.relpath(master_path, settings.MEDIA_ROOT)
-
-        video.save(update_fields=["hls_master", "trailer", "thumbnail"])
-        print(f"[RQ] Finished HLS pipeline for video {video.id}")
+        print(f"[RQ] Finished HLS pipeline for video {video_id}")
 
     except Exception as e:
         print(f"Error running HLS conversion for video {video_id}: {e}")
+
 
 
 def convert_to_hls(source_path: str, video_id: int, make_trailer: bool = True, make_thumbnail: bool = True) -> str:
@@ -182,14 +172,19 @@ def convert_to_hls(source_path: str, video_id: int, make_trailer: bool = True, m
     
     try:
         video = Video.objects.get(pk=video_id)
+
         video.hls_master = _rel_to_media(master_path)
+        
         if trailer_path:
-            video.trailer = _rel_to_media(trailer_path)            
+            trailer_rel = _rel_to_media(trailer_path)
+            video.trailer.name = trailer_rel           
+        
         if thumb_path: 
             thumb_rel = _rel_to_media(thumb_path)
-            with open(thumb_path, "rb") as f:
-                video.thumbnail.save(os.path.basename(thumb_rel), File(f), save=False)
-        video.save(update_fields=["hls_master", "trailer", "thumbnail"])
+            video.thumbnail_url.name = thumb_rel
+                
+        video.save(update_fields=["hls_master", "trailer", "thumbnail_url"])
+        
     except Video.DoesNotExist:
         pass
 

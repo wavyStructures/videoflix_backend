@@ -10,17 +10,20 @@ while ! pg_isready -h "$DB_HOST" -p "$DB_PORT" -q; do
   echo "PostgreSQL ist nicht erreichbar - schlafe 1 Sekunde"
   sleep 1
 done
-
 echo "PostgreSQL ist bereit - fahre fort..."
 
-# Deine originalen Befehle (ohne wait_for_db)
-python manage.py collectstatic --noinput
-python manage.py makemigrations
-python manage.py migrate
+if [ "$RUN" = "worker" ]; then
+    echo "🎯 Starting RQ Worker..."
+    exec python manage.py rqworker default
+else
+    echo "📦 Running migrations for backend..."
+    python manage.py collectstatic --noinput
+    python manage.py makemigrations
+    python manage.py migrate
 
-# Create a superuser using environment variables
-# (Dein Superuser-Erstellungs-Code bleibt gleich)
-python manage.py shell <<EOF
+    echo "👑 Ensuring superuser exists..."
+    python manage.py shell <<EOF
+
 import os
 from django.contrib.auth import get_user_model
 
@@ -38,17 +41,15 @@ else:
     print(f"Superuser '{username}' already exists.")
 EOF
 
-#!/bin/sh
-set -e
-
-if [ "$RUN" = "worker" ]; then
-    echo "🎯 Starting RQ Worker..."
-    exec python manage.py rqworker default
-else
     echo "🚀 Starting Gunicorn Server..."
-    exec gunicorn core.wsgi:application --bind 0.0.0.0:8000
+    # exec gunicorn core.wsgi:application --bind 0.0.0.0:8000
+
+    exec gunicorn core.wsgi:application \
+        --bind 0.0.0.0:8000 \
+        --workers 3 \
+        --log-level debug \
+        --timeout 120
+    
 fi
 
-# python manage.py rqworker default &
 
-# exec gunicorn core.wsgi:application --bind 0.0.0.0:8000
